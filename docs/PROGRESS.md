@@ -36,8 +36,13 @@
 
 ## 当前工作
 
-- 步骤 1 进行中：Tauri 外壳骨架已搭建并交叉编译出 Windows 验证程序。
-  - 已实现并编译通过：透明无边框置顶窗口、全局快捷键（F12 老板键、左右方向键翻页）、系统托盘、单实例、状态页轮询。
-  - 验证程序：`capability-check/win/HushReader-能力验证.exe`（55MB，release 版），验证说明见 `capability-check/README.md`。
-  - 开发机为 Ubuntu 22.04（容器，无显示器），Windows 实际运行验证需产品负责人在真实 Windows 电脑上完成。
-  - 本机搭建了免 sudo 的交叉编译工具链：Rust 1.97 + mingw-w64 + lld 14 + 本地解包的开发包（环境变量在 ~/.bashrc）。
+- 步骤 1 进行中：Tauri 外壳骨架已搭建，并已在 Windows 本机（`D:\AI_Project\hushreader`）成功编译打包。
+  - 已实现并编译通过：透明无边框置顶窗口、全局快捷键（F9 老板键、左右方向键翻页）、系统托盘、单实例、状态页轮询、可拖动区域悬停显示"移动"光标。
+  - 本机构建产物（release）：
+    - 主程序：`src-tauri/target/release/app.exe`（约 9MB）
+    - 安装包：`src-tauri/target/release/bundle/nsis/hushreader-capability-check_0.1.0_x64-setup.exe`（约 1.9MB）
+    - MSI：`src-tauri/target/release/bundle/msi/hushreader-capability-check_0.1.0_x64_en-US.msi`（约 3MB）
+  - 本机工具链：Node 24 + npm、Rust 1.95（MSVC）、VS 2022 生成工具、Windows SDK 10.0.26100、WebView2 已安装。Rust 依赖下载需走代理（127.0.0.1:7897）才稳定。
+  - 发现并修复缺陷：本机 F12 被其他程序占用，原批量注册快捷键的写法一启动即崩溃；已改为逐个注册、单个冲突仅标记提示（D-023），本验证程序老板键默认改为 F9（D-024）。
+  - 发现并修复缺陷：拖动窗口无效——原因是在 `capabilities/default.json` 缺少 `core:window:allow-start-dragging` 权限，标题栏拖拽被权限系统拦截；已补上该权限并重新构建验证。
+  - Windows 实际运行验证需产品负责人在真实 Windows 电脑上完成，步骤见 `capability-check/README.md`。

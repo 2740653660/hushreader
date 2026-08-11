@@ -10,21 +10,30 @@ use tauri_plugin_global_shortcut::{
     Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutEvent, ShortcutState,
 };
 
+/// 老板键默认键（F12 在这台验证机上被其他程序占用，改为 F9，见 docs/DECISIONS.md D-023）。
+const BOSS_CODE: Code = Code::F9;
+
 struct CapState {
-    f12_registered: bool,
+    boss_registered: bool,
     left_registered: bool,
     right_registered: bool,
-    f12_pressed: u32,
+    boss_conflict: bool,
+    left_conflict: bool,
+    right_conflict: bool,
+    boss_pressed: u32,
     page_pressed: u32,
 }
 
 impl Default for CapState {
     fn default() -> Self {
         Self {
-            f12_registered: false,
+            boss_registered: false,
             left_registered: false,
             right_registered: false,
-            f12_pressed: 0,
+            boss_conflict: false,
+            left_conflict: false,
+            right_conflict: false,
+            boss_pressed: 0,
             page_pressed: 0,
         }
     }
@@ -39,10 +48,13 @@ struct Status {
     transparent: bool,
     always_on_top: bool,
     visible: bool,
-    f12_registered: bool,
+    boss_registered: bool,
     left_registered: bool,
     right_registered: bool,
-    f12_pressed: u32,
+    boss_conflict: bool,
+    left_conflict: bool,
+    right_conflict: bool,
+    boss_pressed: u32,
     page_pressed: u32,
     tray_ok: bool,
 }
@@ -61,10 +73,13 @@ fn status(app: AppHandle) -> Status {
         transparent: true,
         always_on_top: window.as_ref().map(|w| w.is_always_on_top().unwrap_or(false)).unwrap_or(false),
         visible: window.as_ref().map(|w| w.is_visible().unwrap_or(false)).unwrap_or(false),
-        f12_registered: cap.f12_registered,
+        boss_registered: cap.boss_registered,
         left_registered: cap.left_registered,
         right_registered: cap.right_registered,
-        f12_pressed: cap.f12_pressed,
+        boss_conflict: cap.boss_conflict,
+        left_conflict: cap.left_conflict,
+        right_conflict: cap.right_conflict,
+        boss_pressed: cap.boss_pressed,
         page_pressed: cap.page_pressed,
         tray_ok: true,
     }
@@ -116,8 +131,8 @@ fn shortcut_handler(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) 
         return;
     }
     let state = app.state::<AppState>();
-    if shortcut.matches(Modifiers::empty(), Code::F12) {
-        state.cap.lock().unwrap().f12_pressed += 1;
+    if shortcut.matches(Modifiers::empty(), BOSS_CODE) {
+        state.cap.lock().unwrap().boss_pressed += 1;
         toggle_main(app);
     } else if shortcut.matches(Modifiers::empty(), Code::ArrowLeft)
         || shortcut.matches(Modifiers::empty(), Code::ArrowRight)
@@ -126,28 +141,40 @@ fn shortcut_handler(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) 
     }
 }
 
+/// 逐个注册全局快捷键：某个键被其他程序占用时只标记冲突并跳过，
+/// 不影响其他键和程序启动（D-023）。
 fn setup_shortcuts(app: &AppHandle) -> tauri::Result<()> {
     use tauri_plugin_global_shortcut::Builder;
 
+    // 不通过 with_shortcuts 预注册任何键，插件安装必然成功。
+    app.plugin(Builder::new().build())?;
+
     let shortcuts = [
-        Shortcut::new(Some(Modifiers::empty()), Code::F12),
+        Shortcut::new(Some(Modifiers::empty()), BOSS_CODE),
         Shortcut::new(Some(Modifiers::empty()), Code::ArrowLeft),
         Shortcut::new(Some(Modifiers::empty()), Code::ArrowRight),
     ];
 
-    let builder: Builder<tauri::Wry> = Builder::new();
-    let plugin = builder
-        .with_shortcuts(shortcuts)
-        .map(|b| b.with_handler(shortcut_handler));
-    match plugin {
-        Ok(plugin) => app.plugin(plugin.build())?,
-        Err(e) => log::error!("快捷键插件创建失败: {e}"),
-    }
-
     let gs = app.global_shortcut();
     let state = app.state::<AppState>();
     let mut cap = state.cap.lock().unwrap();
-    cap.f12_registered = gs.is_registered(shortcuts[0]);
+    for i in 0..shortcuts.len() {
+        let shortcut = shortcuts[i];
+        match gs.on_shortcut(shortcut, shortcut_handler) {
+            Ok(()) => {}
+            Err(e) => {
+                log::warn!("快捷键 {shortcut:?} 注册失败（可能被其他程序占用）: {e}");
+                if shortcut.matches(Modifiers::empty(), BOSS_CODE) {
+                    cap.boss_conflict = true;
+                } else if shortcut.matches(Modifiers::empty(), Code::ArrowLeft) {
+                    cap.left_conflict = true;
+                } else if shortcut.matches(Modifiers::empty(), Code::ArrowRight) {
+                    cap.right_conflict = true;
+                }
+            }
+        }
+    }
+    cap.boss_registered = gs.is_registered(shortcuts[0]);
     cap.left_registered = gs.is_registered(shortcuts[1]);
     cap.right_registered = gs.is_registered(shortcuts[2]);
     Ok(())

@@ -12,3 +12,6 @@ capability-check/win/
 
 # CodeGraph 本地索引
 .codegraph/
+
+# ZCode 本地工具数据
+.zcode/

@@ -24,7 +24,10 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 14px;
-      cursor: default;
+    }
+    /* 可拖动区域显示"移动"光标，让用户能分辨哪里可以拖动 */
+    [data-tauri-drag-region] {
+      cursor: move;
     }
     h1 { font-size: 17px; font-weight: 600; }
     .hint { font-size: 12px; color: #9aa0ab; line-height: 1.7; margin-top: 6px; }
@@ -79,7 +82,7 @@
     <div class="hint">
       <div>测试方法：</div>
       <div>1. 本窗口应透明圆角、始终置顶、无系统边框。</div>
-      <div>2. 按 F12：窗口应隐藏/显示（老板键）。</div>
+      <div>2. 按 F9：窗口应隐藏/显示（老板键）。若显示"冲突"，说明该键被其他软件占用，程序仍正常运行。</div>
       <div>3. 按 ← → 方向键：翻页计数应增加（全局快捷键）。</div>
       <div>4. 拖动标题栏移动窗口；拖窗口边缘调整大小。</div>
       <div>5. 看系统托盘区域应有图标：左键单击可显示/隐藏窗口。</div>
@@ -92,10 +95,10 @@
     const ITEMS = [
       { key: 'transparent', label: '透明窗口（无系统边框）' },
       { key: 'always_on_top', label: '窗口始终置顶' },
-      { key: 'f12_registered', label: '全局快捷键 F12 注册' },
-      { key: 'left_registered', label: '全局快捷键 ← 注册' },
-      { key: 'right_registered', label: '全局快捷键 → 注册' },
-      { key: 'f12_pressed', label: 'F12 触发次数' },
+      { key: 'boss', label: '老板键 F9 注册' },
+      { key: 'left', label: '全局快捷键 ← 注册' },
+      { key: 'right', label: '全局快捷键 → 注册' },
+      { key: 'boss_pressed', label: '老板键 F9 触发次数' },
       { key: 'page_pressed', label: '翻页键触发次数' },
     ];
     const els = {};
@@ -113,21 +116,33 @@
       }
     }
 
-    function row(key, ok, val) {
+    // state: ok（正常）/ warn（冲突）/ bad（失败）
+    function row(key, state, val) {
       const el = els[key];
       if (!el) return;
-      el.querySelector('.dot').className = 'dot ' + (ok ? 'ok' : 'bad');
+      el.querySelector('.dot').className = 'dot ' + state;
       el.querySelector('.val').textContent = val;
     }
 
+    function regState(registered, conflict) {
+      if (registered) return 'ok';
+      if (conflict) return 'warn';
+      return 'bad';
+    }
+    function regText(registered, conflict) {
+      if (registered) return '成功';
+      if (conflict) return '冲突：被其他程序占用';
+      return '未注册';
+    }
+
     function render(s) {
-      row('transparent', s.transparent, s.transparent ? '正常' : '失败');
-      row('always_on_top', s.always_on_top, s.always_on_top ? '正常' : '失败');
-      row('f12_registered', s.f12_registered, s.f12_registered ? '成功' : '失败');
-      row('left_registered', s.left_registered, s.left_registered ? '成功' : '失败');
-      row('right_registered', s.right_registered, s.right_registered ? '成功' : '失败');
-      row('f12_pressed', true, String(s.f12_pressed));
-      row('page_pressed', true, String(s.page_pressed));
+      row('transparent', s.transparent ? 'ok' : 'bad', s.transparent ? '正常' : '失败');
+      row('always_on_top', s.always_on_top ? 'ok' : 'bad', s.always_on_top ? '正常' : '失败');
+      row('boss', regState(s.boss_registered, s.boss_conflict), regText(s.boss_registered, s.boss_conflict));
+      row('left', regState(s.left_registered, s.left_conflict), regText(s.left_registered, s.left_conflict));
+      row('right', regState(s.right_registered, s.right_conflict), regText(s.right_registered, s.right_conflict));
+      row('boss_pressed', 'ok', String(s.boss_pressed));
+      row('page_pressed', 'ok', String(s.page_pressed));
       document.getElementById('trayHint').textContent =
         '托盘：' + (s.tray_ok ? '图标已创建，请到系统托盘查看' : '创建失败');
     }
