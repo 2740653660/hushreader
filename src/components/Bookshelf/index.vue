@@ -6,6 +6,7 @@ import { useReaderStore } from '../../stores/reader'
 import { parseTxt } from '../../utils/txtParser'
 import { parseEpub } from '../../utils/epubParser'
 import { parseMobi } from '../../utils/mobiParser'
+import { platform } from '../../platform'
 import { saveCover, loadCover, removeCover, saveCustomCover, loadCustomCover, removeCustomCover, removeBookData, saveChapters, removeChapters } from '../../utils/db'
 import SettingsModal from '../Settings/index.vue'
 import ContextMenu from './ContextMenu.vue'
@@ -88,11 +89,11 @@ async function openChapterList(bookId: string) {
 
   try {
     if (book.format === 'txt') {
-      const text = window.services?.readFile(book.filePath) ?? ''
+      const text = await platform.readFile(book.filePath).catch(() => '')
       const chapters = parseTxt(text, configStore.config.other.chapterRegex || undefined)
       chapterListItems.value = chapters.map(c => ({ index: c.index, title: c.title }))
     } else if (book.format === 'mobi') {
-      const content = window.services?.readFileBinary?.(book.filePath)
+      const content = await platform.readFileBinary(book.filePath).catch(() => null)
       if (content) {
         const blob = new Blob([content], { type: 'application/x-mobipocket-ebook' })
         const file = new File([blob], book.filePath.split(/[\\/]/).pop() ?? 'book.mobi')
@@ -101,7 +102,7 @@ async function openChapterList(bookId: string) {
         chapterListItems.value = result.chapters.map(c => ({ index: c.index, title: c.title }))
       }
     } else {
-      const content = window.services?.readFileBinary?.(book.filePath)
+      const content = await platform.readFileBinary(book.filePath).catch(() => null)
       if (content) {
         const blob = new Blob([content], { type: 'application/epub+zip' })
         const file = new File([blob], book.filePath.split(/[\\/]/).pop() ?? 'book.epub')
@@ -200,12 +201,9 @@ function openFileLocation(bookId: string) {
   closeContextMenu()
   const book = bookStore.books.find(b => b.id === bookId)
   if (!book) return
-  try {
-    const result = (window as any).ztools?.shellShowItemInFolder?.(book.filePath)
-    if (!result) toast('无法打开文件位置', 'error')
-  } catch {
+  platform.revealInFolder(book.filePath).catch(() => {
     toast('无法打开文件位置', 'error')
-  }
+  })
 }
 
 // Category modal
@@ -301,7 +299,7 @@ async function repairCover(bookId: string) {
     return
   }
   try {
-    const content = window.services?.readFileBinary?.(book.filePath)
+    const content = await platform.readFileBinary(book.filePath).catch(() => null)
     if (!content) {
       bookStore.updateBook(bookId, { coverImage: undefined })
       removeCover(bookId).catch(() => { })
@@ -345,7 +343,7 @@ async function restoreCover(bookId: string) {
   }
 
   try {
-    const content = window.services?.readFileBinary?.(book.filePath)
+    const content = await platform.readFileBinary(book.filePath).catch(() => null)
     if (!content) {
       bookStore.updateBook(bookId, { coverImage: undefined })
       await removeCover(bookId)
@@ -439,7 +437,7 @@ async function reloadMetadata(bookId: string, silent = false) {
     let totalChapters: number | undefined
 
     if (book.format === 'epub') {
-      const content = window.services?.readFileBinary?.(book.filePath)
+      const content = await platform.readFileBinary(book.filePath).catch(() => null)
       if (!content) {
         throw new Error('无法读取文件，请检查文件是否存在或路径是否正确')
       }
@@ -453,7 +451,7 @@ async function reloadMetadata(bookId: string, silent = false) {
       if (result.coverUrl && !configStore.config.other.plainTextCover) coverImage = result.coverUrl
       if (result.chapters?.length) saveChapters(bookId, result.chapters).catch(() => { })
     } else if (book.format === 'mobi') {
-      const content = window.services?.readFileBinary?.(book.filePath)
+      const content = await platform.readFileBinary(book.filePath).catch(() => null)
       if (!content) {
         throw new Error('无法读取文件，请检查文件是否存在或路径是否正确')
       }
@@ -468,8 +466,8 @@ async function reloadMetadata(bookId: string, silent = false) {
       if (result.coverUrl && !configStore.config.other.plainTextCover) coverImage = result.coverUrl
       if (result.chapters?.length) saveChapters(bookId, result.chapters).catch(() => { })
     } else {
-      const text = window.services?.readFile(book.filePath)
-      if (text === undefined || text === null) {
+      const text = await platform.readFile(book.filePath).catch(() => '')
+      if (!text) {
         throw new Error('无法读取文件，请检查文件是否存在或路径是否正确')
       }
       const chapters = parseTxt(text, configStore.config.other.chapterRegex || undefined)
@@ -477,7 +475,7 @@ async function reloadMetadata(bookId: string, silent = false) {
       if (chapters.length) saveChapters(bookId, chapters).catch(() => { })
     }
 
-    const fileModifiedAt = window.services?.getFileModifiedTime?.(book.filePath)
+    const fileModifiedAt = await platform.getFileModifiedTime(book.filePath).catch(() => null)
     const updates: Partial<typeof book> = { title, author, description: description || undefined, totalChapters, fileModifiedAt, customCoverImage: undefined }
 
     removeCustomCover(bookId).catch(() => { })
@@ -572,9 +570,9 @@ async function executeSearch() {
     let fullText = ''
 
     if (book.format === 'txt') {
-      fullText = window.services?.readFile(book.filePath) ?? ''
+      fullText = await platform.readFile(book.filePath).catch(() => '')
     } else if (book.format === 'mobi') {
-      const content = window.services?.readFileBinary?.(book.filePath)
+      const content = await platform.readFileBinary(book.filePath).catch(() => null)
       if (content) {
         const blob = new Blob([content], { type: 'application/x-mobipocket-ebook' })
         const file = new File([blob], book.filePath.split(/[\\/]/).pop() ?? 'book.mobi')
@@ -583,7 +581,7 @@ async function executeSearch() {
         fullText = result.chapters.map(c => c.content || '').join('\n')
       }
     } else {
-      const content = window.services?.readFileBinary?.(book.filePath)
+      const content = await platform.readFileBinary(book.filePath).catch(() => null)
       if (content) {
         const blob = new Blob([content], { type: 'application/epub+zip' })
         const file = new File([blob], book.filePath.split(/[\\/]/).pop() ?? 'book.epub')
@@ -663,7 +661,7 @@ async function executeSearch() {
   }
 }
 
-function jumpToSearchResult(result: { charOffset: number }) {
+async function jumpToSearchResult(result: { charOffset: number }) {
   const bookId = searchBookId.value
   if (!bookId) return
   const book = bookStore.books.find(b => b.id === bookId)
@@ -673,11 +671,11 @@ function jumpToSearchResult(result: { charOffset: number }) {
 
   let chapters: { index: number; content: string }[] = []
   if (book.format === 'txt') {
-    const text = window.services?.readFile(book.filePath) ?? ''
+    const text = await platform.readFile(book.filePath).catch(() => '')
     const parsed = parseTxt(text, configStore.config.other.chapterRegex || undefined)
     chapters = parsed.map(c => ({ index: c.index, content: c.content || '' }))
   } else if (book.format === 'mobi') {
-    const content = window.services?.readFileBinary?.(book.filePath)
+    const content = await platform.readFileBinary(book.filePath).catch(() => null)
     if (content) {
       const blob = new Blob([content], { type: 'application/x-mobipocket-ebook' })
       const file = new File([blob], book.filePath.split(/[\\/]/).pop() ?? 'book.mobi')
@@ -690,7 +688,7 @@ function jumpToSearchResult(result: { charOffset: number }) {
       return
     }
   } else {
-    const content = window.services?.readFileBinary?.(book.filePath)
+    const content = await platform.readFileBinary(book.filePath).catch(() => null)
     if (content) {
       const blob = new Blob([content], { type: 'application/epub+zip' })
       const file = new File([blob], book.filePath.split(/[\\/]/).pop() ?? 'book.epub')
@@ -854,10 +852,9 @@ async function importBook(filePath: string) {
 
     if (isEpub) {
       try {
-        const content = window.services?.readFileBinary?.(filePath)
+        const content = await platform.readFileBinary(filePath).catch(() => null)
         if (content) {
-          const blob = new Blob([content], { type: 'application/epub+zip' })
-          const file = new File([blob], name)
+          const file = new File([content], name)
           const result = await parseEpub(file)
           title = result.title || title
           author = result.author || ''
@@ -869,10 +866,9 @@ async function importBook(filePath: string) {
 
     if (isMobi) {
       try {
-        const content = window.services?.readFileBinary?.(filePath)
+        const content = await platform.readFileBinary(filePath).catch(() => null)
         if (content) {
-          const blob = new Blob([content], { type: 'application/x-mobipocket-ebook' })
-          const file = new File([blob], name)
+          const file = new File([content], name)
           const result = await parseMobi(file)
           if (result.error) { toast(`MOBI解析失败：${result.error}`, 'error'); return }
           title = result.title || title
@@ -885,7 +881,7 @@ async function importBook(filePath: string) {
       }
     }
 
-    const fileModifiedAt = window.services?.getFileModifiedTime?.(filePath)
+    const fileModifiedAt = await platform.getFileModifiedTime(filePath).catch(() => null)
 
     const book = bookStore.addBook({
       title, author, description: description || undefined,
@@ -972,14 +968,13 @@ async function importDroppedFile(file: File) {
 }
 
 function handleAddBook() {
-  const picker = window.ztools?.showOpenDialog({
+  void platform.pickOpenFiles({
     title: '选择书籍',
-    buttonLabel: '导入',
     filters: [{ name: '书籍文件', extensions: ['epub', 'txt', 'mobi'] }],
-    properties: ['openFile']
-  })
-
-  if (picker?.[0]) importBook(picker[0])
+    multiple: false
+  }).then(paths => {
+    if (paths?.[0]) importBook(paths[0])
+  }).catch(() => { })
 }
 
 // Handle plugin enter with file import
@@ -994,10 +989,17 @@ watch(() => props.enterAction, async (action) => {
 }, { immediate: true })
 
 // Drag and drop import
+// 说明：Tauri 的 WebView2 里 HTML5 拖放拿不到文件真实路径，因此正式环境走
+// Tauri 窗口拖放事件（能拿到路径）；浏览器开发预览走 HTML5 File 兜底。
 const fileHovering = ref(false)
 let hoverNestLevel = 0
 const showDropConfirmModal = ref(false)
 const pendingDropFiles = ref<File[]>([])
+const pendingDropPaths = ref<string[]>([])
+
+function isTauri() {
+  return '__TAURI_INTERNALS__' in window
+}
 
 function hasFilePayload(ev: DragEvent) {
   return Array.from(ev.dataTransfer?.types ?? []).includes('Files')
@@ -1040,6 +1042,7 @@ function onDrop(ev: DragEvent) {
   ev.preventDefault()
   hoverNestLevel = 0
   fileHovering.value = false
+  if (isTauri()) return // 真实文件路径由 Tauri 拖放事件提供，避免重复处理
   const files = ev.dataTransfer?.files
   if (!files?.length) return
   const validExts = /\.(epub|txt|mobi)$/i
@@ -1055,8 +1058,27 @@ function onDrop(ev: DragEvent) {
   showDropConfirmModal.value = true
 }
 
+/** Tauri 原生拖放：按路径直接导入。 */
+function handleDroppedPaths(paths: string[]) {
+  const validExts = /\.(epub|txt|mobi)$/i
+  const valid = paths.filter(p => validExts.test(p))
+  if (!valid.length) {
+    toast('仅支持 EPUB、TXT 和 MOBI 格式', 'error')
+    return
+  }
+  pendingDropPaths.value = valid
+  showDropConfirmModal.value = true
+}
+
 async function confirmDropImport() {
   showDropConfirmModal.value = false
+  if (pendingDropPaths.value.length) {
+    for (const p of pendingDropPaths.value) {
+      await importBook(p)
+    }
+    pendingDropPaths.value = []
+    return
+  }
   for (const f of pendingDropFiles.value) {
     await importDroppedFile(f)
   }
@@ -1066,7 +1088,16 @@ async function confirmDropImport() {
 function cancelDropImport() {
   showDropConfirmModal.value = false
   pendingDropFiles.value = []
+  pendingDropPaths.value = []
 }
+
+/** 确认弹窗中展示的待导入文件名列表。 */
+const dropItemNames = computed(() => {
+  if (pendingDropPaths.value.length) {
+    return pendingDropPaths.value.map(p => p.split(/[\\/]/).pop() ?? p)
+  }
+  return pendingDropFiles.value.map(f => f.name)
+})
 
 // Close context menu on outside click
 function onDocClick(e: MouseEvent) {
@@ -1075,11 +1106,29 @@ function onDocClick(e: MouseEvent) {
   }
 }
 
-onMounted(() => {
+let unlistenDragDrop: (() => void) | undefined
+
+onMounted(async () => {
   document.addEventListener('click', onDocClick)
+  if (isTauri()) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window')
+      unlistenDragDrop = await getCurrentWindow().onDragDropEvent((event) => {
+        if (event.payload.type === 'over') {
+          fileHovering.value = true
+        } else if (event.payload.type === 'leave') {
+          fileHovering.value = false
+        } else if (event.payload.type === 'drop') {
+          fileHovering.value = false
+          handleDroppedPaths(event.payload.paths)
+        }
+      })
+    } catch { }
+  }
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
+  unlistenDragDrop?.()
 })
 
 function randomCoverColor(): string {
@@ -1100,7 +1149,7 @@ async function resolveEpubCovers() {
         book.coverImage = cached
         continue
       }
-      const content = window.services?.readFileBinary?.(book.filePath)
+      const content = await platform.readFileBinary(book.filePath).catch(() => null)
       if (!content) continue
       const blob = new Blob([content], { type: 'application/epub+zip' })
       const file = new File([blob], book.filePath.split(/[\\/]/).pop() ?? 'book.epub')
@@ -1123,7 +1172,7 @@ async function resolveMobiCovers() {
         book.coverImage = cached
         continue
       }
-      const content = window.services?.readFileBinary?.(book.filePath)
+      const content = await platform.readFileBinary(book.filePath).catch(() => null)
       if (!content) continue
       const blob = new Blob([content], { type: 'application/x-mobipocket-ebook' })
       const file = new File([blob], book.filePath.split(/[\\/]/).pop() ?? 'book.mobi')
@@ -1451,12 +1500,12 @@ function formatReadingTime(ms: number): string {
       <div class="form-modal">
         <p style="margin: 0 0 8px; color: var(--c-ink)">检测到拖入的书籍文件，是否导入到书架？</p>
         <div class="drop-file-list">
-          <div v-for="(f, i) in pendingDropFiles" :key="i" class="drop-file-item">
+          <div v-for="(name, i) in dropItemNames" :key="i" class="drop-file-item">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
-            <span>{{ f.name }}</span>
+            <span>{{ name }}</span>
           </div>
         </div>
         <div class="form-actions">

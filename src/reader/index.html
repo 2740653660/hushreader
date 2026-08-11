@@ -540,9 +540,8 @@
     }
 
     function sendCommand(command) {
-      if (window.ztools?.sendToParent) {
-        window.ztools.sendToParent("hushreader-command", command)
-      }
+      // Tauri 版：通过事件把命令发给主窗口（App.vue 处理）
+      window.__hrEmit?.("reader-cmd", command)
     }
 
     const notifNode = document.getElementById("hushreaderNotification")
@@ -1222,6 +1221,7 @@
       }
     })
   </script>
+  <script type="module" src="/src/reader/main.ts"></script>
 </body>
 
 </html>

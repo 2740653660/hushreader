@@ -6,11 +6,7 @@ const configStore = useConfigStore()
 const theme = computed(() => configStore.config.other.theme)
 
 function getSystemDark(): boolean {
-  try {
-    return (window as any).ztools?.isDarkColors?.() ?? false
-  } catch {
-    return window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false
-  }
+  return window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false
 }
 
 const systemDark = ref(getSystemDark())

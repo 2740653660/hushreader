@@ -41,13 +41,6 @@ export interface Book {
 
 function storageGet(key: string): string | null {
   try {
-    const zStorage = (window as any).ztools?.dbStorage
-    if (zStorage?.getItem) {
-      const val = zStorage.getItem(key)
-      if (val != null) return typeof val === 'string' ? val : JSON.stringify(val)
-    }
-  } catch { }
-  try {
     return window.localStorage.getItem(key)
   } catch {
     return null
@@ -55,13 +48,6 @@ function storageGet(key: string): string | null {
 }
 
 function storageSet(key: string, value: string) {
-  try {
-    const zStorage = (window as any).ztools?.dbStorage
-    if (zStorage?.setItem) {
-      zStorage.setItem(key, value)
-      return
-    }
-  } catch { }
   try {
     window.localStorage.setItem(key, value)
   } catch { }

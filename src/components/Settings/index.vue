@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useConfigStore, type ReaderConfig } from '../../stores/config'
 import { useBookStore, type Book } from '../../stores/books'
+import { platform } from '../../platform'
 import Toast from '../Bookshelf/Toast.vue'
 
 const emit = defineEmits<{ close: [] }>()
@@ -101,24 +102,13 @@ async function exportConfig() {
       config: configData
     }
     const json = JSON.stringify(exportObj, null, 2)
-    const ztools = (window as any).ztools
-    if (ztools?.showSaveDialog) {
-      const filePath = ztools.showSaveDialog({
-        title: '导出 HushReader 配置',
-        defaultPath: `hushreader-config-${new Date().toISOString().slice(0, 10)}.json`,
-        filters: [{ name: 'JSON', extensions: ['json'] }]
-      })
-      if (filePath) {
-        window.services.writeFileToPath(filePath, json)
-      }
-    } else {
-      const blob = new Blob([json], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `hushreader-config-${new Date().toISOString().slice(0, 10)}.json`
-      a.click()
-      URL.revokeObjectURL(url)
+    const filePath = await platform.pickSaveFile({
+      title: '导出 HushReader 配置',
+      defaultName: `hushreader-config-${new Date().toISOString().slice(0, 10)}.json`,
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    if (filePath) {
+      await platform.writeFile(filePath, json)
     }
     showToast('配置导出成功', 'success')
   } catch (e) {
@@ -132,33 +122,16 @@ async function exportConfig() {
 async function importConfig() {
   isImportingConfig.value = true
   try {
-    const ztools = (window as any).ztools
-    let json = ''
-    if (ztools?.showOpenDialog) {
-      const filePaths = ztools.showOpenDialog({
-        title: '导入 HushReader 配置',
-        filters: [{ name: 'JSON', extensions: ['json'] }],
-        properties: ['openFile']
-      })
-      if (!filePaths || !filePaths.length) {
-        isImportingConfig.value = false
-        return
-      }
-      json = window.services.readFileFromPath(filePaths[0])
-    } else {
-      const input = document.createElement('input')
-      input.type = 'file'
-      input.accept = '.json'
-      const file = await new Promise<File | null>(resolve => {
-        input.onchange = () => resolve(input.files?.[0] ?? null)
-        input.click()
-      })
-      if (!file) {
-        isImportingConfig.value = false
-        return
-      }
-      json = await file.text()
+    const filePaths = await platform.pickOpenFiles({
+      title: '导入 HushReader 配置',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      multiple: false
+    })
+    if (!filePaths?.length) {
+      isImportingConfig.value = false
+      return
     }
+    const json = await platform.readFile(filePaths[0]).catch(() => '')
     if (!json) {
       isImportingConfig.value = false
       return
@@ -201,24 +174,13 @@ async function exportBooks() {
       books: booksData
     }
     const json = JSON.stringify(exportObj, null, 2)
-    const ztools = (window as any).ztools
-    if (ztools?.showSaveDialog) {
-      const filePath = ztools.showSaveDialog({
-        title: '导出 HushReader 书籍',
-        defaultPath: `hushreader-books-${new Date().toISOString().slice(0, 10)}.json`,
-        filters: [{ name: 'JSON', extensions: ['json'] }]
-      })
-      if (filePath) {
-        window.services.writeFileToPath(filePath, json)
-      }
-    } else {
-      const blob = new Blob([json], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `hushreader-books-${new Date().toISOString().slice(0, 10)}.json`
-      a.click()
-      URL.revokeObjectURL(url)
+    const filePath = await platform.pickSaveFile({
+      title: '导出 HushReader 书籍',
+      defaultName: `hushreader-books-${new Date().toISOString().slice(0, 10)}.json`,
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    if (filePath) {
+      await platform.writeFile(filePath, json)
     }
     showToast(`成功导出 ${booksData.length} 本书`, 'success')
   } catch (e) {
@@ -232,33 +194,16 @@ async function exportBooks() {
 async function importBooks() {
   isImportingBooks.value = true
   try {
-    const ztools = (window as any).ztools
-    let json = ''
-    if (ztools?.showOpenDialog) {
-      const filePaths = ztools.showOpenDialog({
-        title: '导入 HushReader 书籍',
-        filters: [{ name: 'JSON', extensions: ['json'] }],
-        properties: ['openFile']
-      })
-      if (!filePaths || !filePaths.length) {
-        isImportingBooks.value = false
-        return
-      }
-      json = window.services.readFileFromPath(filePaths[0])
-    } else {
-      const input = document.createElement('input')
-      input.type = 'file'
-      input.accept = '.json'
-      const file = await new Promise<File | null>(resolve => {
-        input.onchange = () => resolve(input.files?.[0] ?? null)
-        input.click()
-      })
-      if (!file) {
-        isImportingBooks.value = false
-        return
-      }
-      json = await file.text()
+    const filePaths = await platform.pickOpenFiles({
+      title: '导入 HushReader 书籍',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      multiple: false
+    })
+    if (!filePaths?.length) {
+      isImportingBooks.value = false
+      return
     }
+    const json = await platform.readFile(filePaths[0]).catch(() => '')
     if (!json) {
       isImportingBooks.value = false
       return
@@ -462,7 +407,7 @@ function commitCapture(targetArr: string[]) {
     <div class="settings-box">
       <!-- Header -->
       <div class="settings-header">
-        <h2 class="settings-title">插件设置</h2>
+        <h2 class="settings-title">设置</h2>
         <div class="config-switcher">
           <select :value="configStore.activeConfigIndex"
             @change="(e: Event) => configStore.switchConfig(Number((e.target as HTMLSelectElement).value))"

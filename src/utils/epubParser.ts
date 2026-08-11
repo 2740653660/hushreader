@@ -14,8 +14,14 @@ export async function parseEpub(file: File): Promise<{
 }> {
   const ePub = (await import('epubjs')).default
 
-  const arrayBuffer = await file.arrayBuffer()
-  const book = ePub(arrayBuffer as ArrayBuffer)
+  let arrayBuffer: ArrayBuffer
+  if (file instanceof File && typeof (file as any).arrayBuffer === 'function') {
+    arrayBuffer = await file.arrayBuffer()
+  } else {
+    // 直接读取到的二进制数据（Tauri 命令返回 Uint8Array）统一包装成 Blob 后再解析
+    arrayBuffer = await new Blob([file]).arrayBuffer()
+  }
+  const book = ePub(arrayBuffer)
   await book.ready
 
   const metadata = await book.loaded.metadata

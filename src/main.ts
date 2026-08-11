@@ -14,7 +14,7 @@ if (saved) {
     const theme = cfg?.other?.theme
     if (theme) {
       if (theme === 'auto') {
-        const isDark = (window as any).ztools?.isDarkColors?.() ?? window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false
+        const isDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false
         document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
       } else {
         document.documentElement.setAttribute('data-theme', theme)

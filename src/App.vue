@@ -9,29 +9,9 @@ import { parseTxt } from './utils/txtParser'
 import { parseEpub } from './utils/epubParser'
 import { parseMobi } from './utils/mobiParser'
 import { loadChapters, saveChapters } from './utils/db'
+import { platform, type Bounds } from './platform'
 
 type HushreaderCommand = string | { type?: string; width?: number; height?: number; x?: number; y?: number; percent?: number }
-type HushreaderBounds = { x: number; y: number; width: number; height: number }
-type AppBrowserWindow = {
-  id: number
-  show?: () => void
-  hide?: () => void
-  close?: () => void
-  focus?: () => void
-  blur?: () => void
-  isDestroyed?: () => boolean
-  setFocusable?: (flag: boolean) => void
-  setSkipTaskbar?: (flag: boolean) => void
-  setSize?: (width: number, height: number) => void
-  setContentSize?: (width: number, height: number) => void
-  setContentBounds?: (bounds: HushreaderBounds) => void
-  setPosition?: (x: number, y: number) => void
-  setAlwaysOnTop?: (flag: boolean) => void
-  moveTop?: () => void
-  webContents?: {
-    executeJavaScript?: <T = unknown>(code: string, userGesture?: boolean) => Promise<T>
-  }
-}
 
 const FISH_MIN_WIDTH = 280
 const FISH_MAX_WIDTH = 1180
@@ -61,9 +41,8 @@ let readingTimerStart = 0
 let readingTimerWarning = 0
 let isAutoPageTickRunning = false
 
-let hushreaderWindow: AppBrowserWindow | null = null
-let hushreaderWindowAnchor: { x: number; y: number } | null = null
-let offHushreaderCommand: (() => void) | undefined
+let offReaderCommand: (() => void) | undefined
+let offMainCommand: (() => void) | undefined
 
 const cfg = computed(() => configStore.config)
 const hushreaderCfg = computed(() => cfg.value.hushreader)
@@ -97,9 +76,15 @@ function clampNumber(value: number, min: number, max: number) {
   return Math.min(safeMax, Math.max(safeMin, Math.round(safeValue)))
 }
 
-function getWorkArea() {
-  const display = (window as any).ztools?.getPrimaryDisplay?.()
-  return display?.workArea ?? { x: 0, y: 0, width: window.screen.availWidth, height: window.screen.availHeight }
+/** 主显示器工作区缓存（Tauri 命令异步获取；启动时初始化）。 */
+let workAreaCache: Bounds | null = null
+
+function initWorkArea() {
+  platform.getWorkArea().then(a => { workAreaCache = a }).catch(() => { })
+}
+
+function getWorkArea(): Bounds {
+  return workAreaCache ?? { x: 0, y: 0, width: window.screen.availWidth, height: window.screen.availHeight }
 }
 
 function getHushreaderSizeLimits() {
@@ -141,7 +126,7 @@ function getStoredHushreaderAnchor() {
 function getAnchoredHushreaderWindowBoundsForSize(width: number, height: number) {
   const area = getWorkArea()
   const size = clampHushreaderSize(width, height)
-  const fallback = hushreaderWindowAnchor ?? getStoredHushreaderAnchor() ?? getInitialHushreaderWindowBoundsForSize(size.width, size.height)
+  const fallback = getStoredHushreaderAnchor() ?? getInitialHushreaderWindowBoundsForSize(size.width, size.height)
   const maxX = area.x + Math.max(0, area.width - size.width)
   const maxY = area.y + Math.max(0, area.height - size.height)
   return {
@@ -227,110 +212,30 @@ function getHushreaderPayload(bounds = getHushreaderWindowBounds()) {
   }
 }
 
-function applyHushreaderWindowBounds(bounds: HushreaderBounds, positionOnly = false) {
-  if (!hushreaderWindow || hushreaderWindow.isDestroyed?.()) return
-  hushreaderWindowAnchor = { x: bounds.x, y: bounds.y }
-  hushreaderWindow.setContentBounds?.(bounds)
-  hushreaderWindow.setContentSize?.(bounds.width, bounds.height)
-  hushreaderWindow.setSize?.(bounds.width, bounds.height)
-  hushreaderWindow.setPosition?.(bounds.x, bounds.y)
-  if (!positionOnly) {
-    hushreaderWindow.setAlwaysOnTop?.(true)
-    hushreaderWindow.setSkipTaskbar?.(true)
-    hushreaderWindow.moveTop?.()
-  }
-}
-
-function positionHushreaderWindow() {
-  applyHushreaderWindowBounds(getHushreaderWindowBounds())
-}
-
 function pushHushreaderState(options?: { skipShow?: boolean }) {
-  if (!hushreaderWindow || hushreaderWindow.isDestroyed?.()) return
   const bounds = getHushreaderWindowBounds()
   const payload = getHushreaderPayload(bounds)
-  if (payload.visible && !options?.skipShow) {
-    applyHushreaderWindowBounds(bounds)
-    hushreaderWindow.show?.()
-  } else if (payload.visible && options?.skipShow) {
-    applyHushreaderWindowBounds(bounds)
+  if (payload.visible) {
+    if (!options?.skipShow) {
+      void platform.readerShow(bounds)
+    }
   } else {
-    hushreaderWindow.hide?.()
+    void platform.readerHide()
   }
-  const sync = hushreaderWindow.webContents?.executeJavaScript?.(
-    `window.hushreaderSetState?.(${JSON.stringify(payload)})`
-  )
-  void sync?.catch((error) => {
-    console.warn('[HushReader] hushreader window sync failed', error)
-  })
+  void platform.pushReaderState(payload)
 }
 
 let pendingNotificationCallback: (() => void) | null = null
 
 function pushHushreaderNotification(message: string, onClose?: () => void) {
-  if (!hushreaderWindow || hushreaderWindow.isDestroyed?.()) {
-    onClose?.()
-    return
-  }
   pendingNotificationCallback = onClose ?? null
-  const sync = hushreaderWindow.webContents?.executeJavaScript?.(
-    `window.hushreaderShowNotification?.(${JSON.stringify(message)})`
-  )
-  void sync?.catch((error) => {
-    console.warn('[HushReader] notification push failed', error)
-    onClose?.()
-  })
-}
-
-function ensureHushreaderWindow(options?: { skipShow?: boolean }) {
-  if (!hushreaderActivated.value || !(window as any).ztools?.createBrowserWindow || !currentBook.value) return
-  if (hushreaderWindow && !hushreaderWindow.isDestroyed?.()) {
-    pushHushreaderState(options)
-    return
-  }
-  const bounds = getHushreaderWindowBounds()
-  hushreaderWindowAnchor = { x: bounds.x, y: bounds.y }
-  hushreaderWindow = (window as any).ztools.createBrowserWindow(
-    'hushreader.html',
-    {
-      width: bounds.width,
-      height: bounds.height,
-      x: bounds.x,
-      y: bounds.y,
-      show: false,
-      title: '隐阅盒',
-      frame: false,
-      resizable: false,
-      movable: false,
-      minimizable: false,
-      maximizable: false,
-      fullscreenable: false,
-      skipTaskbar: true,
-      skipTaskBar: true,
-      showInTaskbar: false,
-      transparent: true,
-      backgroundColor: '#00000000',
-      hasShadow: false,
-      focusable: true,
-      acceptFirstMouse: true,
-      alwaysOnTop: true,
-      webPreferences: {
-        devTools: false,
-        zoomFactor: 1,
-        nodeIntegration: false,
-        contextIsolation: false
-      }
-    },
-    () => pushHushreaderState()
-  )
-  pushHushreaderState()
+  void platform.pushReaderNotification(message)
 }
 
 function showHushreaderWindow() {
   if (!hushreaderActivated.value) return
   isReaderHidden.value = false
-  ensureHushreaderWindow()
-  nextTick(pushHushreaderState)
+  pushHushreaderState()
 }
 
 function hideHushreaderWindow() {
@@ -341,16 +246,11 @@ function hideHushreaderWindow() {
 
 function focusHushreaderKeyboard() {
   isHushreaderKeyboardActive.value = true
-  if (!hushreaderWindow || hushreaderWindow.isDestroyed?.()) return
-  hushreaderWindow.setSkipTaskbar?.(true)
-  hushreaderWindow.setAlwaysOnTop?.(true)
-  hushreaderWindow.moveTop?.()
+  void platform.readerFocus()
 }
 
 function blurHushreaderKeyboard() {
   isHushreaderKeyboardActive.value = false
-  if (!hushreaderWindow || hushreaderWindow.isDestroyed?.()) return
-  hushreaderWindow.setSkipTaskbar?.(true)
 }
 
 function toggleHidden() {
@@ -362,6 +262,14 @@ function toggleAutoPaging() {
   if (!currentBook.value) return
   isAutoPaging.value = !isAutoPaging.value
   hushreaderCfg.value.autoFlipEnabled = isAutoPaging.value
+}
+
+/** 关闭阅读器（命令 'close'），并隐藏悬浮窗。 */
+function closePlugin() {
+  isReaderHidden.value = true
+  hushreaderActivated.value = false
+  stopReadingTimer()
+  void platform.readerClose()
 }
 
 function toast(msg: string, type: 'info' | 'error' | 'success' = 'info') {
@@ -412,13 +320,6 @@ function getReadingTimerRemaining(): number | null {
   const elapsed = Date.now() - readingTimerStart
   const total = cfg.value.other.timerMinutes * 60 * 1000
   return Math.max(0, total - elapsed)
-}
-
-function closePlugin() {
-  isReaderHidden.value = true
-  hushreaderActivated.value = false
-  stopReadingTimer()
-  try { (window as any).ztools?.outPlugin?.() } catch { }
 }
 
 function saveReadingProgress() {
@@ -476,33 +377,37 @@ function saveReadingProgress() {
   bookStore.updateBook(book.id, updates)
 }
 
-function getFileModifiedTime(filePath: string): number | null {
+async function getFileModifiedTime(filePath: string): Promise<number | null> {
   try {
-    return (window as any).services?.getFileModifiedTime?.(filePath) ?? null
+    return await platform.getFileModifiedTime(filePath)
   } catch {
     return null
   }
 }
 
+function makeFile(path: string, name: string, content: Uint8Array<ArrayBuffer>, mime: string): File {
+  const blob = new Blob([content], { type: mime })
+  return new File([blob], name)
+}
+
 async function parseBookAndGetChapters(book: typeof bookStore.currentBook): Promise<any[] | null> {
   if (!book) { toast('书籍不存在', 'error'); return null }
 
+  const name = book.filePath.split(/[\\/]/).pop() ?? 'book'
   if (book.format === 'txt') {
-    const text = (window as any).services?.readFile(book.filePath) ?? ''
+    const text = await platform.readFile(book.filePath).catch(() => '')
     return parseTxt(text, configStore.config.other.chapterRegex || undefined)
   } else if (book.format === 'mobi') {
-    const content = (window as any).services?.readFileBinary?.(book.filePath)
+    const content = await platform.readFileBinary(book.filePath).catch(() => null)
     if (!content) { toast('无法读取MOBI文件', 'error'); return null }
-    const blob = new Blob([content], { type: 'application/x-mobipocket-ebook' })
-    const file = new File([blob], book.filePath.split(/[\\/]/).pop() ?? 'book.mobi')
+    const file = makeFile(book.filePath, name, content, 'application/x-mobipocket-ebook')
     const result = await parseMobi(file)
     if (result.error) { toast(`MOBI解析失败：${result.error}`, 'error'); return null }
     return result.chapters
   } else {
-    const content = (window as any).services?.readFileBinary?.(book.filePath)
+    const content = await platform.readFileBinary(book.filePath).catch(() => null)
     if (!content) { toast('无法读取EPUB文件', 'error'); return null }
-    const blob = new Blob([content], { type: 'application/epub+zip' })
-    const file = new File([blob], book.filePath.split(/[\\/]/).pop() ?? 'book.epub')
+    const file = makeFile(book.filePath, name, content, 'application/epub+zip')
     try {
       const { chapters } = await parseEpub(file)
       return chapters
@@ -525,7 +430,7 @@ async function openBookAndHushreader(bookId: string) {
 
   try {
     let chapters = await loadChapters(bookId)
-    const currentModified = getFileModifiedTime(book.filePath)
+    const currentModified = await getFileModifiedTime(book.filePath)
     const fileChanged = currentModified !== book.fileModifiedAt
 
     if (!chapters || fileChanged) {
@@ -546,7 +451,7 @@ async function openBookAndHushreader(bookId: string) {
 
     hushreaderActivated.value = true
     isReaderHidden.value = false
-    ensureHushreaderWindow()
+    pushHushreaderState()
     startReadingTimer()
     nextTick(() => {
       pushHushreaderState()
@@ -566,7 +471,7 @@ function resizeHushreaderWindow(width: number, height: number) {
   const size = clampHushreaderSize(width, height)
   hushreaderCfg.value.hushreaderWidth = size.width
   hushreaderCfg.value.hushreaderHeight = size.height
-  positionHushreaderWindow()
+  void platform.readerResize(size.width, size.height)
   updateHushreaderLayout()
   configStore.save()
 }
@@ -576,18 +481,18 @@ function moveHushreaderWindow(x: number, y: number) {
   const bounds = getMovedHushreaderWindowBounds(x, y)
   hushreaderCfg.value.hushreaderX = bounds.x
   hushreaderCfg.value.hushreaderY = bounds.y
-  applyHushreaderWindowBounds(bounds)
+  void platform.readerMove(bounds.x, bounds.y)
   configStore.save()
 }
 
 function previewHushreaderWindowSize(width: number, height: number) {
-  if (!hushreaderWindow || hushreaderWindow.isDestroyed?.() || !Number.isFinite(width) || !Number.isFinite(height)) return
-  applyHushreaderWindowBounds(getAnchoredHushreaderWindowBoundsForSize(width, height), true)
+  const size = clampHushreaderSize(width, height)
+  void platform.readerResize(size.width, size.height)
 }
 
 function previewHushreaderWindowPosition(x: number, y: number) {
-  if (!hushreaderWindow || hushreaderWindow.isDestroyed?.() || !Number.isFinite(x) || !Number.isFinite(y)) return
-  applyHushreaderWindowBounds(getMovedHushreaderWindowBounds(x, y), true)
+  const bounds = getMovedHushreaderWindowBounds(x, y)
+  void platform.readerMove(bounds.x, bounds.y)
 }
 
 function handleHushreaderCommand(command: HushreaderCommand) {
@@ -635,8 +540,8 @@ function handleHushreaderCommand(command: HushreaderCommand) {
   else if (command === 'close') closePlugin()
   else if (command === 'auto') toggleAutoPaging()
   else if (command === 'close-reader') { isReaderHidden.value = true; blurHushreaderKeyboard() }
-  else if (command === 'destroy') { saveReadingProgress(); hushreaderActivated.value = false; stopReadingTimer(); hushreaderWindow?.close?.(); hushreaderWindow = null }
-  else if (command === 'show-main') { (window as any).ztools?.showMainWindow?.() }
+  else if (command === 'destroy') { saveReadingProgress(); hushreaderActivated.value = false; stopReadingTimer(); void platform.readerClose() }
+  else if (command === 'show-main') { void platform.showMainWindow() }
   else if (command === 'stop-auto') { isAutoPaging.value = false; hushreaderCfg.value.autoFlipEnabled = false }
   else if (command === 'start-auto') { if (currentBook.value) { isAutoPaging.value = true; hushreaderCfg.value.autoFlipEnabled = true } }
   else if (command === 'add-bookmark') {
@@ -675,6 +580,15 @@ function handleHushreaderCommand(command: HushreaderCommand) {
     }
   }
   else if (command === 'notification-close') { pendingNotificationCallback?.(); pendingNotificationCallback = null }
+}
+
+/** 全局快捷键动作分发（已移除全局快捷键，D-027 作废；保留结构备用）。 */
+function handleMainCommand(command: unknown) {
+  if (command === 'prev') {
+    if (currentBook.value && !isReaderHidden.value) { readerStore.prevPage(); saveReadingProgress() }
+  } else if (command === 'next') {
+    if (currentBook.value && !isReaderHidden.value) { readerStore.nextPage(); saveReadingProgress() }
+  }
 }
 
 watch(
@@ -766,30 +680,20 @@ watch(
   ],
   () => {
     nextTick(() => {
-      if (hushreaderActivated.value && currentBook.value) {
-        ensureHushreaderWindow({ skipShow: true })
-      } else {
-        pushHushreaderState()
-      }
+      pushHushreaderState()
     })
   }
 )
 
+// 翻页快捷键变化时无需重新注册系统快捷键（全局快捷键已移除，D-027 作废）。
+// 悬浮窗内的按键由悬浮窗页面自身处理。
+
 onMounted(async () => {
+  initWorkArea()
   await configStore.load()
   await bookStore.load()
-    ; (window as any).ztools?.onPluginEnter?.((action: any) => {
-      route.value = action.code
-      enterAction.value = action
-    })
-    ; (window as any).ztools?.onPluginOut?.((processExit: boolean) => {
-      if (processExit) {
-        saveReadingProgress()
-        hushreaderActivated.value = false
-        hushreaderWindow?.close?.()
-      }
-    })
-  offHushreaderCommand = (window as any).services?.onHushreaderCommand?.(handleHushreaderCommand)
+  offReaderCommand = await platform.onReaderCommand((c: unknown) => handleHushreaderCommand(c as HushreaderCommand)).catch(() => undefined)
+  offMainCommand = await platform.onMainCommand(handleMainCommand).catch(() => undefined)
 
   if (!route.value) route.value = 'bookshelf'
 })
@@ -798,7 +702,8 @@ onBeforeUnmount(() => {
   saveReadingProgress()
   window.clearInterval(autoTimer)
   stopReadingTimer()
-  offHushreaderCommand?.()
+  offReaderCommand?.()
+  offMainCommand?.()
 })
 </script>
 
