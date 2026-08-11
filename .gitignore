@@ -3,4 +3,12 @@ dist
 **/*.zip
 test
 功能说明文档.md
-docs/
+
+# Tauri 编译产物
+src-tauri/target
+
+# Linux 交叉编译的验证程序（Windows 上自行编译）
+capability-check/win/
+
+# CodeGraph 本地索引
+.codegraph/

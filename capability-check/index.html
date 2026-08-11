@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>隐阅盒能力验证</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      background: transparent;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      color: #e8e8e8;
+      user-select: none;
+    }
+    .card {
+      margin: 18px;
+      background: rgba(24, 26, 32, 0.92);
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+    }
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      cursor: default;
+    }
+    h1 { font-size: 17px; font-weight: 600; }
+    .hint { font-size: 12px; color: #9aa0ab; line-height: 1.7; margin-top: 6px; }
+    .drag-region { position: absolute; inset: 0; }
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 14px;
+    }
+    .item:last-child { border-bottom: none; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .ok { background: #3ecf6e; }
+    .warn { background: #f5b83d; }
+    .bad { background: #ef5350; }
+    .name { flex: 1; }
+    .val { font-size: 12px; color: #9aa0ab; }
+    .tray-badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .btn {
+      margin-top: 12px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #3d6ef7;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn:hover { background: #2f5be0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="titlebar" data-tauri-drag-region>
+      <h1 data-tauri-drag-region>隐阅盒 · 核心能力验证</h1>
+      <span class="val" data-tauri-drag-region>拖动本区域可移动窗口</span>
+    </div>
+
+    <div id="items"></div>
+
+    <div class="tray-badge" id="trayHint">托盘：未检测</div>
+
+    <div class="hint">
+      <div>测试方法：</div>
+      <div>1. 本窗口应透明圆角、始终置顶、无系统边框。</div>
+      <div>2. 按 F12：窗口应隐藏/显示（老板键）。</div>
+      <div>3. 按 ← → 方向键：翻页计数应增加（全局快捷键）。</div>
+      <div>4. 拖动标题栏移动窗口；拖窗口边缘调整大小。</div>
+      <div>5. 看系统托盘区域应有图标：左键单击可显示/隐藏窗口。</div>
+    </div>
+
+    <button class="btn" id="quitBtn">退出程序</button>
+  </div>
+
+  <script>
+    const ITEMS = [
+      { key: 'transparent', label: '透明窗口（无系统边框）' },
+      { key: 'always_on_top', label: '窗口始终置顶' },
+      { key: 'f12_registered', label: '全局快捷键 F12 注册' },
+      { key: 'left_registered', label: '全局快捷键 ← 注册' },
+      { key: 'right_registered', label: '全局快捷键 → 注册' },
+      { key: 'f12_pressed', label: 'F12 触发次数' },
+      { key: 'page_pressed', label: '翻页键触发次数' },
+    ];
+    const els = {};
+    const itemsEl = document.getElementById('items');
+
+    function build() {
+      itemsEl.innerHTML = '';
+      for (const it of ITEMS) {
+        const row = document.createElement('div');
+        row.className = 'item';
+        row.innerHTML =
+          '<span class="dot"></span><span class="name">' + it.label + '</span><span class="val">-</span>';
+        itemsEl.appendChild(row);
+        els[it.key] = row;
+      }
+    }
+
+    function row(key, ok, val) {
+      const el = els[key];
+      if (!el) return;
+      el.querySelector('.dot').className = 'dot ' + (ok ? 'ok' : 'bad');
+      el.querySelector('.val').textContent = val;
+    }
+
+    function render(s) {
+      row('transparent', s.transparent, s.transparent ? '正常' : '失败');
+      row('always_on_top', s.always_on_top, s.always_on_top ? '正常' : '失败');
+      row('f12_registered', s.f12_registered, s.f12_registered ? '成功' : '失败');
+      row('left_registered', s.left_registered, s.left_registered ? '成功' : '失败');
+      row('right_registered', s.right_registered, s.right_registered ? '成功' : '失败');
+      row('f12_pressed', true, String(s.f12_pressed));
+      row('page_pressed', true, String(s.page_pressed));
+      document.getElementById('trayHint').textContent =
+        '托盘：' + (s.tray_ok ? '图标已创建，请到系统托盘查看' : '创建失败');
+    }
+
+    async function poll() {
+      try {
+        const s = await window.__TAURI_INTERNALS__.invoke('status');
+        render(s);
+      } catch (e) {
+        document.getElementById('trayHint').textContent = '状态读取失败：' + e;
+      }
+    }
+
+    build();
+    document.getElementById('quitBtn').addEventListener('click', () => {
+      try { window.__TAURI_INTERNALS__.invoke('quit'); } catch (e) {}
+    });
+    setInterval(poll, 400);
+    poll();
+  </script>
+</body>
+</html>
