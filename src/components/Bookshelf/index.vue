@@ -7,6 +7,7 @@ import { parseTxt } from '../../utils/txtParser'
 import { parseEpub } from '../../utils/epubParser'
 import { parseMobi } from '../../utils/mobiParser'
 import { platform } from '../../platform'
+import { importBookFromFile } from '../../utils/importer'
 import { saveCover, loadCover, removeCover, saveCustomCover, loadCustomCover, removeCustomCover, removeBookData, saveChapters, removeChapters } from '../../utils/db'
 import SettingsModal from '../Settings/index.vue'
 import ContextMenu from './ContextMenu.vue'
@@ -24,6 +25,7 @@ const readerStore = useReaderStore()
 
 const openBookAndHushreader = inject<(id: string) => void>('openBookAndHushreader')
 const hideHushreaderWindow = inject<() => void>('hideHushreaderWindow')
+const navigate = inject<(page: 'bookshelf' | 'findbook') => void>('navigate')
 
 /** 正在阅读的书籍 id（由 App.vue 提供）：非空时显示"正在读"角标与关闭悬浮窗按钮。 */
 const readerActiveBookId = inject<ComputedRef<string | null>>('readerActiveBookId', computed(() => null))
@@ -835,71 +837,13 @@ async function batchReload() {
 
 // Import book
 async function importBook(filePath: string) {
-  if (!filePath) return
-  const name = filePath.split(/[\\/]/).pop() ?? ''
-  const isEpub = /\.epub$/i.test(name)
-  const isTxt = /\.txt$/i.test(name)
-  const isMobi = /\.mobi$/i.test(name)
-  if (!isEpub && !isTxt && !isMobi) {
-    toast('仅支持 EPUB、TXT 和 MOBI 格式', 'error')
-    return
-  }
-
   isLoading.value = true
   try {
-    let title = name.replace(/\.(epub|txt|mobi)$/i, '')
-    let author = ''
-    let description = ''
-    let coverColor = randomCoverColor()
-    let coverImage: string | undefined
-
-    if (isEpub) {
-      try {
-        const content = await platform.readFileBinary(filePath).catch(() => null)
-        if (content) {
-          const file = new File([content], name)
-          const result = await parseEpub(file)
-          title = result.title || title
-          author = result.author || ''
-          description = result.description || ''
-          if (result.coverUrl && !configStore.config.other.plainTextCover) coverImage = result.coverUrl
-        }
-      } catch { }
-    }
-
-    if (isMobi) {
-      try {
-        const content = await platform.readFileBinary(filePath).catch(() => null)
-        if (content) {
-          const file = new File([content], name)
-          const result = await parseMobi(file)
-          if (result.error) { toast(`MOBI解析失败：${result.error}`, 'error'); return }
-          title = result.title || title
-          author = result.author || ''
-          description = result.description || ''
-          if (result.coverUrl && !configStore.config.other.plainTextCover) coverImage = result.coverUrl
-        }
-      } catch (e: any) {
-        toast(`MOBI导入失败：${e.message}`, 'error'); return
-      }
-    }
-
-    const fileModifiedAt = await platform.getFileModifiedTime(filePath).catch(() => null)
-
-    const book = bookStore.addBook({
-      title, author, description: description || undefined,
-      format: isEpub ? 'epub' : isMobi ? 'mobi' : 'txt',
-      filePath,
-      coverColor,
-      coverImage,
-      fileModifiedAt
-    })
-
-    if (book) {
-      if (coverImage) saveCover(book.id, coverImage).catch(() => { })
-      toast(`《${title}》已加入书架`, 'success')
-    } else {
-      toast('该书籍已在书架中', 'info')
+    const result = await importBookFromFile(filePath)
+    if (result.ok) {
+      toast(`《${result.title}》已加入书架`, 'success')
+    } else if (result.message) {
+      toast(result.message, 'info')
     }
   } catch (error: any) {
     toast(`导入失败: ${error.message || error}`, 'error')
@@ -1244,6 +1188,13 @@ function formatReadingTime(ms: number): string {
         <input v-model="bookStore.searchQuery" class="search-input" placeholder="搜索书名或作者..." />
       </div>
       <div class="shelf-actions">
+        <button class="find-book-btn" title="搜索并下载书籍" @click="navigate?.('findbook')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <span>找书</span>
+        </button>
         <button class="icon-btn" :class="{ active: cfg.other.listMode }" :title="cfg.other.listMode ? '卡片视图' : '列表视图'"
           @click="configStore.config.other.listMode = !configStore.config.other.listMode">
           <svg v-if="cfg.other.listMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1728,6 +1679,27 @@ function formatReadingTime(ms: number): string {
 
 .close-reader-btn:hover {
   background: var(--c-accent-hover);
+}
+
+.find-book-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  background: var(--c-surface-sunken);
+  color: var(--c-ink);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--c-border);
+  transition: background 0.15s var(--ease-out), border-color 0.15s var(--ease-out);
+}
+
+.find-book-btn:hover {
+  background: var(--c-border);
+  border-color: var(--c-border-strong);
 }
 
 .category-bar {

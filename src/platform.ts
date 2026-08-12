@@ -88,6 +88,42 @@ export const platform = {
   setAutostart: (enabled: boolean): Promise<void> => invoke('set_autostart', { enabled }),
   getAutostart: (): Promise<boolean> => invoke('get_autostart'),
 
+  // ---------- So Novel 下载后台 ----------
+
+  backendStatus: (): Promise<{ running: boolean; port: number }> => invoke('backend_status'),
+  backendStart: (): Promise<{ running: boolean; port: number }> => invoke('backend_start'),
+  backendStop: (): Promise<void> => invoke('backend_stop'),
+
+  /** 书库目录（后台下载文件落盘位置）。 */
+  getBookshelfDir: (): Promise<string> => invoke('get_bookshelf_dir'),
+  setBookshelfDir: (path: string): Promise<void> => invoke('set_bookshelf_dir', { path }),
+
+  /** 目录选择对话框，取消返回 null。 */
+  pickDirectory: (opts?: { title?: string }): Promise<string | null> =>
+    invoke<string | null>('pick_directory', { title: opts?.title ?? null }),
+
+  /** 多书源聚合搜索（kw 书名/作者）。 */
+  sonovelSearch: (kw: string, searchLimit?: number): Promise<unknown> =>
+    invoke('sonovel_search', { kw, searchLimit: searchLimit ?? 30 }),
+
+  /** 书源列表。 */
+  sonovelSources: (): Promise<unknown> => invoke('sonovel_sources'),
+
+  /** 书库目录下已落盘的文件列表。 */
+  sonovelLocalBooks: (): Promise<unknown> => invoke('sonovel_local_books'),
+
+  /** 发起下载（异步，完成后发 sonovel-fetch-done 事件）。 */
+  sonovelFetch: (url: string, sourceId: number, format: string): Promise<void> =>
+    invoke('sonovel_fetch', { url, sourceId, format }),
+
+  /** 订阅下载进度（章节总数/已完成数/百分比）。 */
+  onSonovelProgress: (cb: (p: { total: number; index: number; percent: number }) => void): Promise<UnlistenFn> =>
+    listen('sonovel-progress', e => cb(e.payload as { total: number; index: number; percent: number })),
+
+  /** 订阅下载任务结束（成功/失败）。 */
+  onFetchDone: (cb: (p: { ok: boolean; message: string }) => void): Promise<UnlistenFn> =>
+    listen('sonovel-fetch-done', e => cb(e.payload as { ok: boolean; message: string })),
+
   // ---------- 事件 ----------
 
   /** 订阅主窗口命令（来自悬浮窗与全局快捷键）。 */

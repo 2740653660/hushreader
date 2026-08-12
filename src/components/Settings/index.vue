@@ -90,6 +90,29 @@ const isAddingConfig = ref(false)
 const newConfigName = ref('')
 const renamingConfigIndex = ref(-1)
 const renameInput = ref('')
+const isChangingBookshelf = ref(false)
+
+/** 选择并修改书库目录（下载后台的下载路径随之切换）。 */
+async function changeBookshelfDir() {
+  isChangingBookshelf.value = true
+  try {
+    const dir = await platform.pickDirectory({ title: '选择书库目录' })
+    if (!dir) return
+    const normalized = dir.replace(/[\\/]+$/, '')
+    if (normalized.toLowerCase() === cfg.value.other.bookshelfDir.toLowerCase()) {
+      showToast('书库目录未变化', 'info')
+      return
+    }
+    await platform.setBookshelfDir(normalized)
+    cfg.value.other.bookshelfDir = normalized
+    configStore.save()
+    showToast(`书库目录已更新：${normalized}`, 'success')
+  } catch (e: any) {
+    showToast(`修改书库目录失败：${e}`, 'error')
+  } finally {
+    isChangingBookshelf.value = false
+  }
+}
 
 async function exportConfig() {
   isExportingConfig.value = true
@@ -735,6 +758,20 @@ function commitCapture(targetArr: string[]) {
           <div class="section-label">书架</div>
 
           <div class="setting-row">
+            <label>书库目录</label>
+            <div class="input-group" style="min-width:0; flex:1; justify-content:flex-end;">
+              <span class="bookshelf-path" :title="cfg.other.bookshelfDir">{{ cfg.other.bookshelfDir || '（默认目录）' }}</span>
+              <button class="btn-secondary" :disabled="isChangingBookshelf" @click="changeBookshelfDir"
+                style="padding: 5px 14px; font-size: 12px; flex-shrink:0">
+                {{ isChangingBookshelf ? '处理中...' : '修改' }}
+              </button>
+            </div>
+          </div>
+          <p class="hint" style="margin: -2px 0 6px; padding-left: 0">
+            下载的书籍保存在此目录并自动加入书架；修改后下载后台会重启
+          </p>
+
+          <div class="setting-row">
             <label>显示纯色封面</label>
             <label class="toggle">
               <input type="checkbox" v-model="cfg.other.plainTextCover" />
@@ -1170,6 +1207,18 @@ function commitCapture(targetArr: string[]) {
   font-size: 11px;
   color: var(--c-ink-tertiary);
   margin: 0 0 6px;
+}
+
+.bookshelf-path {
+  font-size: 11px;
+  color: var(--c-ink-tertiary);
+  font-family: var(--font-mono);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
 }
 
 .tip-icon {

@@ -48,3 +48,14 @@
 
 - **D-031 主界面"正在读"角标与关闭悬浮窗入口**：悬浮窗处于激活且未隐藏状态时，书架中正在读的那本书卡片显示"正在读"角标（替代"已读完"角标的位置，读完角标让位给正在读角标）；主界面右上角此时显示带文字的"关闭悬浮窗"按钮，点击后仅隐藏悬浮窗、阅读进度保留（与既有隐藏行为一致），不读书时不显示该按钮。
 - **D-032 悬浮窗调整手柄**：悬浮窗右边缘、下边缘、右下角已有隐藏的调整热区（D-009），补充半透明调整手柄视觉：鼠标移到边缘或拖动时手柄显示（拖动过程中持续显示），鼠标移开后隐藏，平时保持无边框隐蔽外观；窗口尺寸锁定时不显示手柄，避免误导。
+
+## 2026-08-12（步骤 3 开发）
+
+- **D-033 步骤 3 后台启动方式**：So Novel 后台以隐藏进程随应用启动/退出（`java -Dmode=web -Dconfig.file=<数据目录config> -jar app.jar`，CREATE_NO_WINDOW），退出应用时自动关闭并清理 pid 文件；异常残留由启动时按 pid 清理。
+- **D-034 后台端口策略**：从 7765 起探测空闲端口（被占用则 +1，上限 50 次），写入后台配置；启动后轮询 `/sources` 确认服务就绪（最多 30 秒），失败不阻断主程序，由前端"找书"页提示并提供重试。
+- **D-035 数据目录与书库目录**：后台运行目录为 `AppData\Roaming\com.hushreader.desktop\sonovel\`（config.ini、rules、日志、pid 文件），书库目录默认 `AppData\Roaming\com.hushreader.desktop\books`；书库目录作为后台下载路径（download-path），可在设置中修改，修改后自动重启后台。书库目录经 Rust 侧持久化（settings.json），前端配置仅作展示回填。
+- **D-036 后台通信方式**：前端不直接访问后台端口；搜索（`/search/aggregated`）、书源（`/sources`）、下载（`/book-fetch`）、本地文件（`/local-books`）全部经 Rust 命令转发；SSE 下载进度（`/download-progress`）由 Rust 读流后转发为 Tauri 事件 `sonovel-progress`，下载结束发 `sonovel-fetch-done`。下载任务一次一本（Rust 侧互斥）。
+- **D-037 下载完成入架方式**：后台下载的文件名规则为 `书名(作者).epub|.txt`；下载开始前记录书库文件快照，完成后对比 `/local-books` 找出新文件，按 `书库目录\文件名` 调用公共导入函数入架（与本地导入同一套去重/封面/mtime 逻辑）。重复文件名（已存在）时仍提示完成但提示未入架。
+- **D-038 移除 So Novel 设备信息上报**：从上游 `github.com/freeok/so-novel`（v1.11.0）源码移除启动时 `ClientReportRepository.report()` 调用及其类文件（原上报本机 MAC/用户名/IP 至 `sonovel-d1.hello-pcdd.workers.dev`），用便携 JDK21+Maven 在 Windows 本机构建替换 `app.jar`（D-013 落地）。
+- **D-039 Web 服务只绑定本机**：后台 Web 服务由绑定 `0.0.0.0` 改为只绑定 `127.0.0.1`，局域网无法访问（配合 D-036 满足阶段 3"后台通信限制为安全的本机访问"）。
+- **D-040 本机构建工具链**：`D:\Ai_Project\tools\` 下放置便携 JDK 21.0.12 + Maven 3.9.9（+本地仓库 `mvn-repo`，Maven 走 127.0.0.1:7897 代理），不改系统环境变量；用于将来重建 so-novel 的 `app.jar`。`scripts/prepare-sonovel.ps1` 负责从官方发布包复制后台资源到 `src-tauri/resources/sonovel/`（该目录约 182MB，已在 .gitignore 忽略）。

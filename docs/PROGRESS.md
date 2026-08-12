@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-步骤 2（独立书架与本地阅读）开发、验收问题修复与产品负责人 Windows 验收全部完成，功能验收通过。
+步骤 3（搜索与下载）开发完成，正在进行本机构建验证；待产品负责人用安装包体验验收后收尾。步骤 2 已交付验收。
 
 ## 已完成
 
@@ -50,22 +50,33 @@
   - `npx tauri build` 首次失败：Tauri 内部下载 WiX（MSI 打包工具）走直连超时（`timeout: global`）。解决：给命令设置 `HTTPS_PROXY=http://127.0.0.1:7897` 等代理环境变量后重跑成功（手动放置的 `AppData\Local\tauri\WixTools` 未被 Tauri 识别，代理方式才真正生效）。
   - 产物：主程序 `src-tauri/target/release/app.exe`（约 10.3MB）；NSIS 安装包 `src-tauri/target/release/bundle/nsis/HushReader_0.1.0_x64-setup.exe`（约 2.4MB）；MSI `src-tauri/target/release/bundle/msi/HushReader_0.1.0_x64_en-US.msi`（约 3.5MB）。
   - 构建输出有两条 Warn：`__TAURI_BUNDLE_TYPE variable not found in binary`（仅影响将来应用内更新插件定位，第一版阶段 6 才涉及，现无影响）。
+- 步骤 3 开发完成（2026-08-12）：
+  - 引入 So Novel 后台资源（官方发布包 app.jar、JRE21 runtime、rules 书源规则）到 `src-tauri/resources/sonovel/`（约 182MB，`.gitignore` 忽略，`scripts/prepare-sonovel.ps1` 负责复制）；`tauri.conf.json` bundle.resources 打包。
+  - 新增 `src-tauri/src/sonovel.rs`：后台进程管理（隐藏启动/退出清理/异常残留 pid 清理）、端口 7765 起自动探测空闲、按配置生成 config.ini（download-path=书库目录）、等待服务就绪；搜索/书源/下载/local-books 全部 Rust 转发；SSE 下载进度转发为 `sonovel-progress` 事件，下载结束发 `sonovel-fetch-done`；下载一次一本互斥。
+  - 数据目录：后台运行目录 `%APPDATA%\com.hushreader.desktop\sonovel\`，书库目录默认 `%APPDATA%\com.hushreader.desktop\books`（可设置修改，修改后重启后台）。
+  - 前端：App.vue 启用路由（书架/找书），书架头部新增"找书"入口；公共导入函数抽取为 `src/utils/importer.ts`（书架本地导入与下载入架共用）；新 store `src/stores/download.ts`；新页面 `src/components/FindBook/`（搜索、多书源结果卡片、EPUB/TXT 下载按钮、进度条、失败重试、放弃任务、后台未就绪提示）；设置页新增"书库目录"设置。
+  - 移除设备信息上报：从上游 `freeok/so-novel` v1.11.0 源码移除 `ClientReportRepository.report()` 调用及类文件（D-038）；Web 服务只绑定 127.0.0.1（D-039）；用便携 JDK21+Maven（`D:\Ai_Project\tools\`，走 127.0.0.1:7897 代理）在 Windows 本机构建改造后的 app.jar 并替换。
+  - 本机冒烟验证通过：后台启动/搜索/EPUB 与 TXT 下载/文件落盘/SSE 进度全链路；改造后 jar 无上报代码、netstat 仅监听 127.0.0.1、局域网 IP 访问失败；`vue-tsc`、`vite build`、`cargo check` 通过。
+  - 修复打包期问题：① Tauri 的 `resource_dir()` 返回带 `\\?\` 前缀的扩展路径，直接传给 java 会被命令行解析破坏（`-jar` 报 ClassNotFound），已在 sonovel.rs 统一剥离前缀（`strip_verbatim`）；② JRE 的 AOT 缓存（`classes.jsa`/`classes_nocoops.jsa`，各 12MB）被 Windows Defender 实时扫描锁定导致 tauri build 复制失败，已从捆绑资源剔除（JVM 自动回退，仅首次启动略慢），资源体积随之减小。
+  - 端到端验证（app.exe 实机运行）：后台自动拉起（java 进程、仅监听 127.0.0.1）、搜索接口正常、退出后清理、异常残留按 pid 自动清理；`vue-tsc`、`vite build`、`cargo build --release`、`npx tauri build` 全部通过。
+  - 构建产物（release，2026-08-12）：主程序 `src-tauri/target/release/app.exe`（约 10.1MB）；NSIS 安装包 `bundle/nsis/HushReader_0.1.0_x64-setup.exe`（约 50.3MB）；MSI `bundle/msi/HushReader_0.1.0_x64_en-US.msi`（约 68.0MB）。
+  - 待办：产品负责人在 Windows 上体验验收（找书→下载→自动入架→阅读），以及托盘真正退出（RunEvent::Exit）时后台关闭的实机确认。
 
 ## 尚未开始
 
-- 旧版 HushReader（ZTools 插件）书架数据一次性迁移导入（步骤 2 范围，方案中要求，未实现，见"当前授权状态"）。
-- 引入或打包 So Novel 源码。
-- 找书/搜索/下载页面。
-- 下载整合。
-- Windows 安装包已在步骤 2 产出，但未做干净环境安装/卸载测试。
-- GitHub 应用内更新。
+- 旧版 HushReader（ZTools 插件）书架数据一次性迁移导入（见"当前授权状态"）。
+- 测量安装包、启动速度和内存占用（阶段 1 剩余）。
+- 干净环境安装/卸载测试（步骤 2 已产出安装包但未测）。
+- GitHub 应用内更新（阶段 6）。
+- 书源规则更新、书源失效手动切换（阶段 5）。
 
 ## 当前授权状态
 
-步骤 1、步骤 2 已完成开发并验收通过（托盘单击、打开书籍、导入、打字左右键恢复正常）。下一步为步骤 3（搜索与下载），待产品负责人确认后开始。注意：旧数据迁移功能（一次性导入旧版书架）尚未实现——方案要求步骤 2 包含它，但实现它需要先确认旧版数据实际存储位置与格式，需要产品负责人提供一台装有旧版 ZTools 插件的环境才能验证；若验收时不需要，将迁移推迟到后续版本并在文档中记录。
+步骤 1、2 已完成验收；步骤 3（搜索与下载）开发完成，正在进行本机构建与安装包产出，构建通过后交产品负责人在 Windows 验收。注意：旧数据迁移功能（一次性导入旧版书架）尚未实现——方案要求步骤 2 包含它，但实现它需要先确认旧版数据实际存储位置与格式，需要产品负责人提供一台装有旧版 ZTools 插件的环境才能验证；若验收时不需要，将迁移推迟到后续版本并在文档中记录。
 
 ## 当前工作
 
-- 步骤 2 已验收通过，等待产品负责人决定何时开始步骤 3（搜索与下载）。
-- 修复版构建产物（release）：主程序 `src-tauri/target/release/app.exe`；安装包 `src-tauri/target/release/bundle/nsis/HushReader_0.1.0_x64-setup.exe`。
+- 步骤 3 收尾：`cargo build --release` 与 `npx tauri build`（走代理）产出含 So Novel 后台的安装包，验证安装包体积与退出无 java 残留。
+- 待产品负责人验收点：找书搜索（多书源）、下载 EPUB/TXT、进度显示、自动入架、书库目录设置、退出后无残留进程。
 - 本机开发环境说明：Rust 依赖下载需走代理（127.0.0.1:7897）才稳定；Windows 编译按协作规则由产品负责人在本机执行（已产出产物）。
+- 构建提示：`tauri build` 前若 JRE 大文件被 Defender 锁定（`拒绝访问`），先删除 `src-tauri/resources/sonovel/runtime/bin/server/classes*.jsa` 再构建。

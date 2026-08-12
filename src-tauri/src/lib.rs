@@ -2,10 +2,12 @@ use serde::{Deserialize, Serialize};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewUrl, WebviewWindow,
+    AppHandle, Manager, PhysicalPosition, PhysicalSize, RunEvent, WebviewUrl, WebviewWindow,
     WebviewWindowBuilder,
 };
 use tauri_plugin_autostart::MacosLauncher;
+
+mod sonovel;
 
 /// 主窗口（书架）标签。
 const MAIN_LABEL: &str = "main";
@@ -422,6 +424,16 @@ pub fn run() {
             reader_focus,
             set_autostart,
             get_autostart,
+            sonovel::backend_status,
+            sonovel::backend_start,
+            sonovel::backend_stop,
+            sonovel::get_bookshelf_dir,
+            sonovel::set_bookshelf_dir,
+            sonovel::pick_directory,
+            sonovel::sonovel_search,
+            sonovel::sonovel_sources,
+            sonovel::sonovel_local_books,
+            sonovel::sonovel_fetch,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
@@ -435,6 +447,11 @@ pub fn run() {
             // 预创建隐藏的悬浮阅读窗口（D-029）：运行期只做显示/隐藏，
             // 避免在 IPC 主线程中创建 WebView2 造成整窗卡死。
             let _ = ensure_reader_window(app.handle());
+            // 启动 So Novel 下载后台（隐藏进程）。失败不阻断主程序，
+            // 由前端在需要时提示"下载后台未就绪"并提供重试。
+            if let Err(e) = sonovel::init(app.handle()) {
+                eprintln!("[sonovel] 后台启动失败：{e}");
+            }
             // 主窗口关闭时隐藏到托盘（D-012），真正退出走托盘菜单。
             if let Some(main) = app.get_webview_window(MAIN_LABEL) {
                 let handle = app.handle().clone();
@@ -449,6 +466,12 @@ pub fn run() {
             }
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // 真正退出时关闭 So Novel 后台进程，避免残留 java 进程。
+            if let RunEvent::Exit = event {
+                sonovel::shutdown(app);
+            }
+        });
 }

@@ -64,6 +64,8 @@ export interface OtherConfig {
   timerEnabled: boolean
   timerMinutes: number
   showImages: boolean
+  /** 书库目录（下载后台落盘 + 书架书籍所在目录）。为空时由 Rust 侧返回默认目录。 */
+  bookshelfDir: string
 }
 
 export interface ReaderConfig {
@@ -122,7 +124,8 @@ const DEFAULT_CONFIG: ReaderConfig = {
     theme: 'auto',
     timerEnabled: false,
     timerMinutes: 30,
-    showImages: false
+    showImages: false,
+    bookshelfDir: ''
   },
   appearance: {
     fontSize: 16,

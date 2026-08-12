@@ -28,3 +28,5 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-opener = "2"
+# 仅用于访问本机后台（http），不启用 TLS，减小体积
+ureq = { version = "2.12", default-features = false }

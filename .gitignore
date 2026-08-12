@@ -7,6 +7,9 @@ test
 # Tauri 编译产物
 src-tauri/target
 
+# So Novel 后台二进制（约182MB，不入库；由 scripts/prepare-sonovel.ps1 从本机官方发布包复制）
+src-tauri/resources/sonovel
+
 # Linux 交叉编译的验证程序（Windows 上自行编译）
 capability-check/win/
 

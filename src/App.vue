@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import Bookshelf from './components/Bookshelf/index.vue'
+import FindBook from './components/FindBook/index.vue'
 import Toast from './components/Bookshelf/Toast.vue'
 import { useReaderStore } from './stores/reader'
 import { useBookStore, type Bookmark } from './stores/books'
 import { useConfigStore } from './stores/config'
+import { useDownloadStore } from './stores/download'
 import { parseTxt } from './utils/txtParser'
 import { parseEpub } from './utils/epubParser'
 import { parseMobi } from './utils/mobiParser'
@@ -21,12 +23,18 @@ const FISH_META_ROW_HEIGHT = 18
 const FISH_SIDE_CONTROLS_WIDTH = 44
 const FISH_CONTENT_PADDING = 20
 
-const route = ref('')
+const route = ref('bookshelf')
 const enterAction = ref<any>({})
 
 const readerStore = useReaderStore()
 const bookStore = useBookStore()
 const configStore = useConfigStore()
+const downloadStore = useDownloadStore()
+
+/** 页面导航（书架 ⇄ 找书），供子组件注入使用。 */
+function navigate(page: 'bookshelf' | 'findbook') {
+  route.value = page
+}
 
 const isReaderHidden = ref(false)
 const isAutoPaging = ref(false)
@@ -473,6 +481,7 @@ async function openBookAndHushreader(bookId: string) {
 provide('openBookAndHushreader', openBookAndHushreader)
 provide('hideHushreaderWindow', hideHushreaderWindow)
 provide('readerActiveBookId', readerActiveBookId)
+provide('navigate', navigate)
 
 function resizeHushreaderWindow(width: number, height: number) {
   if (!Number.isFinite(width) || !Number.isFinite(height)) return
@@ -700,6 +709,16 @@ onMounted(async () => {
   initWorkArea()
   await configStore.load()
   await bookStore.load()
+  await downloadStore.init()
+
+  // 回填书库目录（首次启动取 Rust 侧默认值；用户改过则保持原值）
+  if (!configStore.config.other.bookshelfDir) {
+    try {
+      configStore.config.other.bookshelfDir = await platform.getBookshelfDir()
+      configStore.save()
+    } catch { }
+  }
+
   offReaderCommand = await platform.onReaderCommand((c: unknown) => handleHushreaderCommand(c as HushreaderCommand)).catch(() => undefined)
   offMainCommand = await platform.onMainCommand(handleMainCommand).catch(() => undefined)
 
@@ -708,6 +727,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   saveReadingProgress()
+  downloadStore.dispose()
   window.clearInterval(autoTimer)
   stopReadingTimer()
   offReaderCommand?.()
@@ -716,6 +736,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Bookshelf :enter-action="enterAction" />
+  <Bookshelf v-if="route === 'bookshelf'" :enter-action="enterAction" />
+  <FindBook v-else-if="route === 'findbook'" />
   <Toast :message="toastMsg" :type="toastType" />
 </template>
