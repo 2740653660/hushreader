@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-08-12
+
+### Fixed
+- 应用图标替换为隐阅盒正式 logo（安装包、托盘、窗口图标）。
+
 ## [0.1.0] - 2026-08-12
 
 ### 隐阅盒第一版（Windows 独立桌面软件）

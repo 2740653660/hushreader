@@ -1,11 +1,11 @@
 {
-  "version": "0.1.0",
-  "notes": "### 隐阅盒第一版（Windows 独立桌面软件）\n\n- **独立桌面应用**：不再依赖 ZTools，安装一个安装包即可使用（内置 Java 下载后台，无需单独安装）。\n- **书架**：卡片/列表视图、搜索、分类、排序、元数据编辑、封面、删除、批量操作、书签、阅读时长与阅读进度记录。\n- **本地导入**：支持 EPUB、TXT、MOBI，保留元数据、封面、章节解析。\n- **找书下载**：多书源搜索（书名/作者），选择结果后下载 EPUB/TXT，展示进度与失败重试，完成后自动加入书架。\n- **隐蔽悬浮阅读**：置顶、拖动、调整大小，整体/背景透明度分别调节，三种鼠标移出模式，滚轮与快捷键翻页，自动翻页（默认关闭）。\n- **系统集成**：关闭窗口缩到托盘、开机启动选项、阅读位置与书签跨重启保留。\n- **GitHub 应用内更新**：启动自动检查（每天一次）与手动\"检查更新\"，软件内下载安装，书库与设置不受影响。\n- **隐私**：所有数据保存在本机，不注册账号、无云同步、无遥测，已移除 So Novel 设备信息上报。",
-  "pub_date": "2026-08-12T06:27:14.691Z",
+  "version": "0.1.1",
+  "notes": "### Fixed\n- 应用图标替换为隐阅盒正式 logo（安装包、托盘、窗口图标）。",
+  "pub_date": "2026-08-12T06:36:41.633Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSZzl0TTlQU2RSTUdtenJ5S3FjSFFqOWZnZjNlTnE0TVgwb2lOekNVMXIxOWJtWXJ4elRYNzdTc3hUZ0VsTUVjYk5TOWs3dVAzU2R2a2J2SHJmZWJaTFlJZUcvQ3pCTVEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTE1OTExCWZpbGU6SHVzaFJlYWRlcl8wLjEuMF94NjQtc2V0dXAuZXhlCmRIUHNNb0txSkVNRy9kS1AzQXFJVXB1T1R0YnA3Lys0NTFsUnZ6endDWEhWcHRaODlCOWFTbDhsNEF3c2IrN0RxYlEwcXhKOVY1SG13UFo0K3lTQ0NnPT0K",
-      "url": "https://github.com/2740653660/hushreader/releases/latest/download/HushReader_0.1.0_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSZzl0TTlQU2RSTUVDY1FZK3BIY20wVkNoTm5LaEowbGR6RmczbEVsbFdDWU1sOU0zRjJkQzVNSDk4dTJXeDNRU2Y1VUN6WURzSFhBemRQaDhUWS9weUpZK20vN1ZNZFFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTE2NTkxCWZpbGU6SHVzaFJlYWRlcl8wLjEuMV94NjQtc2V0dXAuZXhlCjE3N2x3bnVET1FrNkZlSi9IUVJJM3V4QVBNMlhxT0hoOHNBR0FsUmZCd1ZWUk1Pa1AxVEh2RkdxTHVFejk3ZTh6dkpIT1VXQzNDQytJNUwvQWVVOURBPT0K",
+      "url": "https://github.com/2740653660/hushreader/releases/latest/download/HushReader_0.1.1_x64-setup.exe"
     }
   }
 }

@@ -90,6 +90,7 @@
 
 ### 固定发布流程（每次新版走同一套）
 
+0. **前置检查（易漏）**：仓库必须是公开（`gh repo view <repo> --json visibility` 确认是 PUBLIC）。私有仓库时应用内更新对普通用户全是 404，无法使用；公开动作需产品负责人确认（对外可见源码）。本次首次发布时发现仓库为 PRIVATE，经产品负责人确认后公开（2026-08-12）。
 1. 更新版本号：`src-tauri/tauri.conf.json` 的 `version`（安装包文件名随版本号变化）；更新 `CHANGELOG.md` 的更新说明。
 2. Windows 本机构建（由产品负责人在 Windows 执行，代理给出命令）：
    - 设置签名环境变量：`TAURI_SIGNING_PRIVATE_KEY`（私钥文件路径或内容）、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`。
