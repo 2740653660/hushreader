@@ -59,3 +59,7 @@
 - **D-038 移除 So Novel 设备信息上报**：从上游 `github.com/freeok/so-novel`（v1.11.0）源码移除启动时 `ClientReportRepository.report()` 调用及其类文件（原上报本机 MAC/用户名/IP 至 `sonovel-d1.hello-pcdd.workers.dev`），用便携 JDK21+Maven 在 Windows 本机构建替换 `app.jar`（D-013 落地）。
 - **D-039 Web 服务只绑定本机**：后台 Web 服务由绑定 `0.0.0.0` 改为只绑定 `127.0.0.1`，局域网无法访问（配合 D-036 满足阶段 3"后台通信限制为安全的本机访问"）。
 - **D-040 本机构建工具链**：`D:\Ai_Project\tools\` 下放置便携 JDK 21.0.12 + Maven 3.9.9（+本地仓库 `mvn-repo`，Maven 走 127.0.0.1:7897 代理），不改系统环境变量；用于将来重建 so-novel 的 `app.jar`。`scripts/prepare-sonovel.ps1` 负责从官方发布包复制后台资源到 `src-tauri/resources/sonovel/`（该目录约 182MB，已在 .gitignore 忽略）。
+
+## 2026-08-12（步骤 3 验收通过）
+
+- **D-041 步骤 3 验收通过**：产品负责人在 Windows 安装产物上完成找书搜索（多书源）、下载、自动入架、阅读全流程验收，功能正常，步骤 3 完成（2026-08-12）。下一步为步骤 4（完整隐蔽阅读），待确认后开始。
