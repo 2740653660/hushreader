@@ -94,11 +94,11 @@
 1. 更新版本号：`src-tauri/tauri.conf.json` 的 `version`（安装包文件名随版本号变化）；更新 `CHANGELOG.md` 的更新说明。
 2. Windows 本机构建（由产品负责人在 Windows 执行，代理给出命令）：
    - 设置签名环境变量：`TAURI_SIGNING_PRIVATE_KEY`（私钥文件路径或内容）、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`。
-   - 运行 `npx tauri build`（走代理环境变量；JRE 大文件被 Defender 锁定时按既有方法处理）。
-   - 产物应包含 `bundle/nsis/HushReader_x.y.z_x64-setup.exe` 及其 `.sig` 签名文件。
+   - 运行 `npx tauri build --bundles nsis`（走代理环境变量；JRE 大文件被 Defender 锁定时按既有方法处理；本项目更新发布只使用 NSIS，MSI 仍保留为首次安装渠道）。
+   - 产物应包含 `bundle/nsis/隐阅阁_x.y.z_x64-setup.exe` 及其 `.sig` 签名文件。
 3. 生成更新清单：运行 `.\scripts\prepare-release.ps1`，产出 `latest.json`（含版本号、说明、签名、下载地址）。
 4. 推送代码；用 `gh` 创建 GitHub Release（tag = `v版本号`，正文填更新说明），上传 3 个文件：
-   - `HushReader_x.y.z_x64-setup.exe`
+   - `隐阅阁_x.y.z_x64-setup.exe`
    - 对应的 `.sig`
    - `latest.json`
 5. 发布后验证：`https://github.com/2740653660/hushreader/releases/latest` 能显示新版本；`latest.json` 的版本号与签名可被应用内更新正常校验（关键流程必须端到端实测一次）。

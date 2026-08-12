@@ -1,11 +1,11 @@
 {
-  "version": "0.1.3",
-  "notes": "### Changed\n- 应用正式名称改为「隐阅阁」（主窗口标题、悬浮窗标题、页面标题）。\n- 图标全部应用正式 logo：程序 exe、任务栏、窗口、托盘、安装包图标。",
-  "pub_date": "2026-08-12T06:56:48.483Z",
+  "version": "0.1.4",
+  "notes": "### Fixed\n- 修复应用内更新前下载后台未退出导致安装器覆盖 `extnet.dll` 失败的问题。\n- 修复正式名称改名后升级可能新建安装目录、保留旧快捷方式和卸载项的问题，升级继续使用原安装目录。\n\n### Changed\n- 桌面快捷方式、开始菜单、安装包和卸载项统一显示「隐阅阁」。",
+  "pub_date": "2026-08-12T08:49:27.397Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSZzl0TTlQU2RSTU5qOWVTdDJFbEJnaHhROWVpMjdZUnlOeGFlQXlRMXRwMGEwWkl2UmZPMkQvRDNLaWpDYmQ5YW1uTXNzNUJ3UmJQYU9oTEhkUTUwbjZRSFlTNGc5SVF3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTE3NzQ4CWZpbGU6SHVzaFJlYWRlcl8wLjEuM194NjQtc2V0dXAuZXhlCnRnOXBBRXYwSjE4WXVWS2F3b0YrRSsxVHZJU1VPZ3FCOCt0OHdLM1pCbDlqV0ZyR2U0ckQ1U1pqS0hRV0psUTVqL2twYU91Y2hyQythRFIyMTBYTkFRPT0K",
-      "url": "https://github.com/2740653660/hushreader/releases/latest/download/HushReader_0.1.3_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSZzl0TTlQU2RSTU9sdE1lazlrMmFOMHhYNHAwNHNteVgvUGZOZi9JcXpKSXR5ZG1GQVA4SWZWUXZLUzhsSkNMRW81OGhOTE1sUnZwWmQrYWwzYUMwamZJTk9VYWRmRXdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTI0NTU2CWZpbGU66ZqQ6ZiF6ZiBXzAuMS40X3g2NC1zZXR1cC5leGUKbVF6ZkNoWnUrUExsb2c5RnRIMVBYTC9obGRERHVYb2oyMGVtQlljdFdVUVNYdVR1TkF5RnRtTzFnLzllaStoajJRVTlEVDlyNEsrMDZnaW5xdlppQWc9PQo=",
+      "url": "https://github.com/2740653660/hushreader/releases/latest/download/隐阅阁_0.1.4_x64-setup.exe"
     }
   }
 }

@@ -7,8 +7,8 @@
 #   3. 生成 latest.json（含版本号、更新说明、签名、下载地址）
 #
 # 发布时把以下 3 个文件一起上传到 GitHub Releases 页面（tag = v版本号）：
-#   - bundle/nsis/HushReader_x.y.z_x64-setup.exe
-#   - bundle/nsis/HushReader_x.y.z_x64-setup.exe.sig
+#   - bundle/nsis/隐阅阁_x.y.z_x64-setup.exe
+#   - bundle/nsis/隐阅阁_x.y.z_x64-setup.exe.sig
 #   - latest.json
 #
 # 完整发布流程见 AGENTS.md「发布与密钥管理」章节。

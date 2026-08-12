@@ -129,6 +129,9 @@ export function useUpdater() {
     if (!update) return
     updatePhase.value = 'installing'
     try {
+      // 安装器会覆盖捆绑的 Java 文件；先停止后台释放 extnet.dll 文件锁。
+      // process 插件直接重启不会触发 Rust 的 RunEvent::Exit。
+      await platform.backendStop()
       // 先安装（运行安装器），再重启；完成后本机即为新版本
       await platform.installUpdate(update)
       // 安装成功，清除待处理标记

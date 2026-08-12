@@ -1,10 +1,10 @@
-# 隐阅盒项目进度
+# 隐阅阁项目进度
 
 最后更新：2026-08-12
 
 ## 当前阶段
 
-步骤 6（GitHub 更新与发布）开发中（D-047/D-048）：产品负责人决定跳过步骤 5（推迟到第二版），步骤 6 提前。代码开发已完成（依赖、配置、前端更新弹窗、自动/手动检查、签名与发布脚本），待生成签名密钥并完成 Windows 构建后做端到端实测。
+步骤 6（GitHub 更新与发布）开发中（D-047/D-048/D-049/D-050/D-051）：产品负责人决定跳过步骤 5（推迟到第二版），步骤 6 提前。0.1.4 已完成代码修改、Windows 签名 NSIS 构建和已安装 0.1.3 环境的原地升级实测，待 GitHub Release 发布及产品负责人从 0.1.3 发起应用内更新实测。
 
 ## 已完成
 
@@ -67,29 +67,39 @@
   - 自动翻页转正（D-042）：功能代码自步骤 2 已完整（设置开关/翻页间隔/连续翻页、右键菜单一键开启/停止、读完全书自动停止），本次正式纳入需求文档，默认关闭。
   - 书签快捷键默认值维持 Shift+F（D-043 曾统一为 Ctrl+B，D-045 按产品负责人意见改回），与需求文档一致，可在设置中自定义。
   - 同步需求文档（D-044）：删除已移除的全局快捷键（老板键 F12、全局翻页）描述；"第一版明确不做"列表移除"自动翻页"。
-  - 产品负责人在 Windows 安装产物上体验通过（2026-08-12）：自动翻页、重启后进度恢复等功能全部正常（"功能都没问题，验收通过"），步骤 4 完成（D-046）。
+- 产品负责人在 Windows 安装产物上体验通过（2026-08-12）：自动翻页、重启后进度恢复等功能全部正常（"功能都没问题，验收通过"），步骤 4 完成（D-046）。
+
+## 0.1.4 名称统一与升级修复（2026-08-12）
+
+- `productName` 更新为“隐阅阁”，版本更新为 0.1.4；`identifier`、资源、更新器配置和图标保持不变。
+- 新增 ASCII NSIS 升级/卸载钩子：从旧 `Software\\hushreader\\HushReader` 注册项恢复原安装目录，写入“隐阅阁”新注册项，删除旧快捷方式与旧卸载项；卸载前按 `%APPDATA%\\com.hushreader.desktop\\sonovel\\backend.pid` 尽力结束 Java 后台。
+- 应用内更新在启动安装器前调用已有 `backend_stop`；Rust 退出逻辑补充无内存状态时按 pid 文件清理残留后台，避免 `extnet.dll` 文件锁。
+- 发布脚本已改为按 `tauri.conf.json` 的 `productName` 查找安装包，并同步更新发布示例和 0.1.4 更新说明。
+- 构建验证：`npm run build`、`cargo check`、`node --check scripts/prepare-release.mjs` 通过；`powershell -ExecutionPolicy Bypass -File .\\scripts\\build-release.ps1` 通过，生成 `隐阅阁_0.1.4_x64-setup.exe`（约 51.4MB）及 `.sig`（420 字节）。默认 MSI 的 WiX `light.exe` 在本机失败，因此发布脚本改为 `--bundles nsis`，符合更新链只发布 NSIS 的决定。
+- 升级兼容实测：从仓库保留的 0.1.3 安装包恢复后运行 0.1.4 `/P`，退出码 0；`%LOCALAPPDATA%\\HushReader\\app.exe` 版本为 0.1.4，未产生 `%LOCALAPPDATA%\\隐阅阁`；旧桌面/开始菜单 `HushReader.lnk` 删除，新「隐阅阁」快捷方式存在；卸载注册表仅有「隐阅阁」条目，安装位置仍为旧目录。
 
 ## 尚未开始
 
 - 旧版 HushReader（ZTools 插件）书架数据一次性迁移导入（见"当前授权状态"）。
 - 测量安装包、启动速度和内存占用（阶段 1 剩余）。
 - 干净环境安装/卸载测试（步骤 2 已产出安装包但未测）。
-- 步骤 6 剩余：签名密钥生成、Windows 构建（验证 `.sig` 产物与 `__TAURI_BUNDLE_TYPE` 警告）、发布 0.1.0/0.1.1 端到端实测更新。
+- 步骤 6 剩余：GitHub Release 发布，以及由产品负责人从 0.1.3 发起的应用内更新端到端体验确认；干净 Windows 环境测试仍未完成。
 - 步骤 5（小说和书源更新）——已推迟到第二版（D-047）。
 
 ## 当前授权状态
 
-步骤 6（GitHub 应用内更新与发布）开发中：代码开发已完成（2026-08-12，D-048），下一步为生成签名密钥并在 Windows 构建、发布实测。步骤 1、2、3、4 均已完成开发并验收通过。步骤 5 按产品负责人决定推迟到第二版。注意：旧数据迁移功能（一次性导入旧版书架）尚未实现——方案要求步骤 2 包含它，但实现它需要先确认旧版数据实际存储位置与格式，需要产品负责人提供一台装有旧版 ZTools 插件的环境才能验证；若验收时不需要，将迁移推迟到后续版本并在文档中记录。
+步骤 6（GitHub 应用内更新与发布）开发中：代码开发、签名密钥准备、Windows NSIS 构建和升级实测已完成（2026-08-12，D-048/D-049/D-050/D-051），下一步为 GitHub Release 发布及应用内更新端到端实测。步骤 1、2、3、4 均已完成开发并验收通过。步骤 5 按产品负责人决定推迟到第二版。注意：旧数据迁移功能（一次性导入旧版书架）尚未实现——方案要求步骤 2 包含它，但实现它需要先确认旧版数据实际存储位置与格式，需要产品负责人提供一台装有旧版 ZTools 插件的环境才能验证；若验收时不需要，将迁移推迟到后续版本并在文档中记录。
 
 ## 当前工作
 
-- 步骤 6 开发完成（2026-08-12，D-047/D-048）：
+- 步骤 6 开发完成（2026-08-12，D-047/D-048/D-049/D-050/D-051，发布验证进行中）：
   - 跳过步骤 5（小说和书源更新）到第二版；步骤 6（GitHub 应用内更新）提前。
   - 依赖：`tauri-plugin-updater`/`tauri-plugin-process`（Rust），`@tauri-apps/plugin-updater`/`plugin-process`（前端）；capabilities 加 `updater:default`/`process:default`。
-  - `tauri.conf.json`：`createUpdaterArtifacts: true`；`plugins.updater.pubkey`（待填公钥）+ endpoints 指向 `github.com/2740653660/hushreader/releases/latest/download/latest.json`。
+  - `tauri.conf.json`：`createUpdaterArtifacts: true`；`plugins.updater.pubkey` 已配置 + endpoints 指向 `github.com/2740653660/hushreader/releases/latest/download/latest.json`。
   - 前端：`src/composables/useUpdater.ts`（单例状态机：自动检查每天一次/手动检查/下载进度/重启安装/忽略版本）；`src/components/Update/UpdateModal.vue` 弹窗（新版本+说明、下载进度、重试、忽略/稍后/安装）；设置页"其他设置"新增"软件更新"区块（当前版本+检查更新+上次检查时间）；`App.vue` 启动自动检查并渲染唯一弹窗；`config.ts` 的 `other` 新增 `lastUpdateCheckAt`/`ignoredUpdateVersion`。
   - 发布脚本 `scripts/prepare-release.ps1`：读取版本号+`.sig`，生成 `latest.json`；AGENTS.md 新增「发布与密钥管理」章节（固定发布流程、密钥保管/换电脑/严禁入库、发布由代理操作）。
-  - 验证：`vue-tsc`、`vite build`、`cargo check` 全部通过；`cargo build --release` 与 `tauri build` 待产品负责人在 Windows 执行。
+  - 验证：`npm run build`、`cargo check`、`cargo build --release` 与 `npx tauri build --bundles nsis` 均通过；NSIS 安装器签名文件已生成。
+  - 0.1.4 修复：正式名称改为“隐阅阁”，新增原地升级的 NSIS 钩子，应用内安装前停止 Java 后台并补充 pid 清理兜底。
 - 本机开发环境说明：Rust 依赖下载需走代理（127.0.0.1:7897）才稳定；Windows 编译按协作规则由产品负责人在本机执行（已产出产物）。
 - 构建提示：`tauri build` 前若 JRE 大文件被 Defender 锁定（`拒绝访问`），先删除 `src-tauri/resources/sonovel/runtime/bin/server/classes*.jsa` 再构建。
 - 步骤 6 构建前先由产品负责人执行 `npx tauri signer generate -- -w <私钥路径>` 生成签名密钥，公钥填入 `tauri.conf.json`（详见 AGENTS.md「发布与密钥管理」）。

@@ -3,9 +3,9 @@
 # 供 AI 代理直接在本机（产品负责人 Windows 电脑）构建 release 产物使用：
 #   - 从本机密钥目录读取签名密码（不打印密码本身）
 #   - 设置签名私钥路径与代理环境变量
-#   - 执行 npx tauri build
+#   - 执行 npx tauri build --bundles nsis
 #
-# 产物：src-tauri/target/release/bundle/nsis/HushReader_<版本>_x64-setup.exe 及 .sig
+# 产物：src-tauri/target/release/bundle/nsis/隐阅阁_<版本>_x64-setup.exe 及 .sig
 # 发布流程见 AGENTS.md「发布与密钥管理」。
 #
 # 用法：PowerShell 中执行  .\scripts\build-release.ps1
@@ -49,6 +49,6 @@ $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = $password
 Write-Host '已读取签名私钥与密码（密码不显示）。'
 Write-Host '开始 tauri build（release）...'
 
-npx tauri build
+npx tauri build --bundles nsis
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Host '构建完成。'

@@ -8,8 +8,8 @@
  *   3. 生成 latest.json（含版本号、更新说明、签名、下载地址）
  *
  * 发布时把以下 3 个文件一起上传到 GitHub Releases 页面（tag = v版本号）：
- *   - bundle/nsis/HushReader_x.y.z_x64-setup.exe
- *   - bundle/nsis/HushReader_x.y.z_x64-setup.exe.sig
+ *   - bundle/nsis/隐阅阁_x.y.z_x64-setup.exe
+ *   - bundle/nsis/隐阅阁_x.y.z_x64-setup.exe.sig
  *   - latest.json
  *
  * 完整发布流程见 AGENTS.md「发布与密钥管理」章节。
@@ -34,16 +34,21 @@ if (!version) {
   console.error('无法读取 tauri.conf.json 中的版本号。')
   process.exit(1)
 }
+const productName = conf.productName
+if (!productName) {
+  console.error('无法读取 tauri.conf.json 中的产品名称。')
+  process.exit(1)
+}
 
 // 定位 NSIS 安装包与其签名文件
 const nsisDir = path.join(root, 'src-tauri', 'target', 'release', 'bundle', 'nsis')
 const files = fs.existsSync(nsisDir) ? fs.readdirSync(nsisDir) : []
 const installerName = files
-  .filter(f => f.startsWith(`HushReader_${version}_`) && f.endsWith('x64-setup.exe'))
+  .filter(f => f.startsWith(`${productName}_${version}_`) && f.endsWith('x64-setup.exe'))
   .sort((a, b) => fs.statSync(path.join(nsisDir, b)).mtimeMs - fs.statSync(path.join(nsisDir, a)).mtimeMs)[0]
 
 if (!installerName) {
-  console.error(`未找到 NSIS 安装包：${nsisDir}\\HushReader_${version}_*_x64-setup.exe。请先完成 tauri build。`)
+  console.error(`未找到 NSIS 安装包：${nsisDir}\\${productName}_${version}_*_x64-setup.exe。请先完成 tauri build。`)
   process.exit(1)
 }
 const installerPath = path.join(nsisDir, installerName)

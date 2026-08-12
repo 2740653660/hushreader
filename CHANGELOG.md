@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-08-12
+
+### Fixed
+- 修复应用内更新前下载后台未退出导致安装器覆盖 `extnet.dll` 失败的问题。
+- 修复正式名称改名后升级可能新建安装目录、保留旧快捷方式和卸载项的问题，升级继续使用原安装目录。
+
+### Changed
+- 桌面快捷方式、开始菜单、安装包和卸载项统一显示「隐阅阁」。
+
 ## [0.1.3] - 2026-08-12
 
 ### Changed

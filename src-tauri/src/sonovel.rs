@@ -325,17 +325,24 @@ pub fn ensure_backend(app: &AppHandle) -> Result<(), String> {
 
 /// 停止后台进程（托盘"退出"与应用退出时调用）。
 pub fn shutdown(app: &AppHandle) {
+    let mut had_child = false;
     if let Some(state) = app.try_state::<SonovelState>() {
         let mut st = state.inner.lock().unwrap();
         if let Some(b) = st.take() {
             if let Some(mut child) = b.child {
+                had_child = true;
                 let _ = child.kill();
                 let _ = child.wait();
             }
         }
     }
     if let Ok(data) = app.path().app_data_dir() {
-        let _ = std::fs::remove_file(data.join("sonovel").join("backend.pid"));
+        let sonovel_data = data.join("sonovel");
+        // 更新或异常启动时状态可能尚未写入内存，仍按 pid 文件清理残留后台。
+        if !had_child {
+            kill_pid_file(&sonovel_data);
+        }
+        let _ = std::fs::remove_file(sonovel_data.join("backend.pid"));
     }
 }
 
