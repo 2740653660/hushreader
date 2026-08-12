@@ -102,50 +102,87 @@
       transition: opacity 120ms ease;
     }
 
+    /* 底部边缘：横向调整手柄 */
     .hushreader-resize-zone.height {
-      right: 30px;
+      right: 34px;
       bottom: 0;
-      left: 30px;
-      height: 8px;
+      left: 34px;
+      height: 10px;
       cursor: ns-resize;
     }
 
     .hushreader-resize-zone.height::before {
-      content: none;
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 48px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.42);
+      box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      transition: opacity 120ms ease;
     }
 
+    /* 右侧边缘：纵向调整手柄 */
     .hushreader-resize-zone.width {
       top: 0;
       right: 0;
-      bottom: 8px;
-      width: 8px;
+      bottom: 12px;
+      width: 10px;
       cursor: ew-resize;
     }
 
     .hushreader-resize-zone.width::before {
-      content: none;
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 4px;
+      height: 48px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.42);
+      box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      transition: opacity 120ms ease;
     }
 
+    /* 右下角：斜向调整手柄 */
     .hushreader-resize-zone.corner {
       right: 0;
       bottom: 0;
-      width: 26px;
-      height: 20px;
+      width: 32px;
+      height: 26px;
       cursor: nwse-resize;
     }
 
     .hushreader-resize-zone.corner::before {
-      content: none;
-    }
-
-    .hushreader-reader:hover .hushreader-resize-zone,
-    body.is-resizing .hushreader-resize-zone {
+      content: "";
+      position: absolute;
+      right: 5px;
+      bottom: 5px;
+      width: 20px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.42);
+      box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
+      transform: rotate(45deg);
       opacity: 0;
+      transition: opacity 120ms ease;
     }
 
+    /* 鼠标移到边缘热区或正在拖动时，显示调整手柄 */
     .hushreader-resize-zone:hover,
     body.is-resizing .hushreader-resize-zone {
-      opacity: 0;
+      opacity: 1;
+    }
+
+    .hushreader-resize-zone:hover::before,
+    body.is-resizing .hushreader-resize-zone::before {
+      opacity: 1;
     }
 
     .hushreader-size-hint {
@@ -232,6 +269,7 @@
 
     body.no-resize .hushreader-resize-zone {
       cursor: default;
+      opacity: 0;
     }
 
     .hushreader-lines {

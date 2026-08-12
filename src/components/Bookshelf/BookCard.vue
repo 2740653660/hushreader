@@ -7,6 +7,7 @@ const props = defineProps<{
   listMode?: boolean
   selectionMode?: boolean
   selected?: boolean
+  reading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -69,7 +70,8 @@ function progressText(book: Book): string {
         <span class="progress-bar" :style="{ width: progressText(book) }"></span>
         <span class="progress-label">{{ progressText(book) }}</span>
       </span>
-      <span v-if="book.finishedAt && !selectionMode && !listMode" class="finished-badge">已读完</span>
+      <span v-if="reading && !selectionMode && !listMode" class="reading-badge">正在读</span>
+      <span v-if="book.finishedAt && !reading && !selectionMode && !listMode" class="finished-badge">已读完</span>
     </div>
 
     <!-- Info -->
@@ -77,7 +79,8 @@ function progressText(book: Book): string {
       <p class="book-title">{{ book.title }}</p>
       <p class="book-author">{{ book.author || '未知作者' }}</p>
       <p v-if="listMode" class="book-meta">
-        <span v-if="book.finishedAt" class="meta-finished">已读完</span>{{ (book.categories || []).join('、') }}{{
+        <span v-if="reading" class="meta-reading">正在读</span><span v-if="book.finishedAt && !reading"
+          class="meta-finished">已读完</span>{{ (book.categories || []).join('、') }}{{
           book.categories?.length && book.lastReadAt ? ' · ' : '' }}{{ book.lastReadAt ? formatDate(book.lastReadAt) : ''
         }}
       </p>
@@ -286,6 +289,34 @@ function progressText(book: Book): string {
   letter-spacing: 0.02em;
   z-index: 2;
   pointer-events: none;
+}
+
+.reading-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--c-success);
+  color: var(--c-ink-inverse);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.meta-reading {
+  display: inline-block;
+  padding: 0 4px;
+  margin-right: 4px;
+  border-radius: var(--radius-xs);
+  background: var(--c-success);
+  color: var(--c-ink-inverse);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.6;
+  vertical-align: middle;
 }
 
 .format-badge {

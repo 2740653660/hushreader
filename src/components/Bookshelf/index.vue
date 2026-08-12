@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, inject, onMounted, onBeforeUnmount, watch, type ComputedRef } from 'vue'
 import { useBookStore, type Bookmark } from '../../stores/books'
 import { useConfigStore } from '../../stores/config'
 import { useReaderStore } from '../../stores/reader'
@@ -24,6 +24,9 @@ const readerStore = useReaderStore()
 
 const openBookAndHushreader = inject<(id: string) => void>('openBookAndHushreader')
 const hideHushreaderWindow = inject<() => void>('hideHushreaderWindow')
+
+/** 正在阅读的书籍 id（由 App.vue 提供）：非空时显示"正在读"角标与关闭悬浮窗按钮。 */
+const readerActiveBookId = inject<ComputedRef<string | null>>('readerActiveBookId', computed(() => null))
 
 function handleHideHushreaderWindow() {
   hideHushreaderWindow?.()
@@ -1270,12 +1273,14 @@ function formatReadingTime(ms: number): string {
             </template>
           </svg>
         </button>
-        <button class="icon-btn" title="关闭隐阅窗口" @click="handleHideHushreaderWindow">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button v-if="readerActiveBookId" class="close-reader-btn" title="隐藏悬浮窗，阅读进度保留"
+          @click="handleHideHushreaderWindow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path
               d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
             <line x1="1" y1="1" x2="23" y2="23" />
           </svg>
+          <span>关闭悬浮窗</span>
         </button>
         <button class="icon-btn" title="设置" @click="showSettings = true">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1332,7 +1337,7 @@ function formatReadingTime(ms: number): string {
 
       <!-- Book cards -->
       <BookCard v-for="book in bookStore.filteredBooks" :key="book.id" :book="book" :list-mode="cfg.other.listMode"
-        :selection-mode="selectionMode" :selected="selectedIds.has(book.id)"
+        :selection-mode="selectionMode" :selected="selectedIds.has(book.id)" :reading="readerActiveBookId === book.id"
         @click="!selectionMode && openBookAndHushreader?.(book.id)" @toggle-select="toggleBookSelect(book.id)"
         @contextmenu.prevent="onContextMenu(book.id, $event)" @cover-error="repairCover(book.id)" />
     </main>
@@ -1704,6 +1709,25 @@ function formatReadingTime(ms: number): string {
 .icon-btn:hover {
   background: var(--c-surface-sunken);
   color: var(--c-ink);
+}
+
+.close-reader-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  background: var(--c-accent);
+  color: var(--c-ink-inverse);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s var(--ease-out);
+}
+
+.close-reader-btn:hover {
+  background: var(--c-accent-hover);
 }
 
 .category-bar {

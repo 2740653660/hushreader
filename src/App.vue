@@ -52,6 +52,13 @@ const currentBook = computed(() => {
   return id ? bookStore.books.find(b => b.id === id) ?? null : null
 })
 
+/** 正在阅读的书籍 id：悬浮窗激活且未隐藏时才有值，供书架显示"正在读"角标与关闭悬浮窗入口。 */
+const readerActiveBookId = computed(() =>
+  hushreaderActivated.value && !isReaderHidden.value && bookStore.currentBookId
+    ? bookStore.currentBookId
+    : null
+)
+
 const currentChapter = computed(() =>
   readerStore.chapters[readerStore.currentChapterIndex] ?? null
 )
@@ -465,6 +472,7 @@ async function openBookAndHushreader(bookId: string) {
 
 provide('openBookAndHushreader', openBookAndHushreader)
 provide('hideHushreaderWindow', hideHushreaderWindow)
+provide('readerActiveBookId', readerActiveBookId)
 
 function resizeHushreaderWindow(width: number, height: number) {
   if (!Number.isFinite(width) || !Number.isFinite(height)) return

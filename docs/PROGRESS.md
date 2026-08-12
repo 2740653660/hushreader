@@ -40,6 +40,16 @@
   - 本机验证：点击书籍不再卡死、可重复打开、章节加载正常、导入对话框正常弹出、主线程命令全程存活；`cargo build --release` 与前端构建通过。
   - 待产品负责人用新版构建复验：托盘单击不闪烁、打开书籍正常、打字时左右键恢复、托盘右键退出正常。
   - 产品负责人 Windows 复验通过（2026-08-12）：托盘单击、打开书籍、打字左右键、导入书籍等基本功能全部正常。
+- 步骤 2 后续两个想法完成（2026-08-12，D-031/D-032）：
+  - 主界面"正在读"角标与"关闭悬浮窗"按钮：悬浮窗激活且未隐藏时，书架中正在读的书卡片显示绿色"正在读"角标（读完角标让位），主界面右上角显示带文字的"关闭悬浮窗"按钮，点击仅隐藏悬浮窗、进度保留；不读书时不显示按钮。
+  - 悬浮窗调整手柄：鼠标移到右/下边缘或右下角时显示半透明调整手柄（拖动中持续显示），移开即隐藏，平时保持隐蔽外观；尺寸锁定时不显示手柄。
+  - 验证：`vue-tsc` 类型检查与 `vite build` 通过，改动已确认进入构建产物；受限于无桌面浏览器环境，未做运行时 GUI 冒烟验证，等待产品负责人在 Windows 上体验确认。
+  - 产品负责人在 Windows 安装产物上体验通过（2026-08-12）："正在读"角标、关闭悬浮窗按钮、悬浮窗调整手柄均正常，两个想法文件已移入 `ideas/已解决/`。
+- 编译与打包（2026-08-12，应产品负责人要求在 Windows 本机执行）：
+  - `npm run build` 通过；`cargo build --release` 通过（首次全量编译约 3 分钟）。
+  - `npx tauri build` 首次失败：Tauri 内部下载 WiX（MSI 打包工具）走直连超时（`timeout: global`）。解决：给命令设置 `HTTPS_PROXY=http://127.0.0.1:7897` 等代理环境变量后重跑成功（手动放置的 `AppData\Local\tauri\WixTools` 未被 Tauri 识别，代理方式才真正生效）。
+  - 产物：主程序 `src-tauri/target/release/app.exe`（约 10.3MB）；NSIS 安装包 `src-tauri/target/release/bundle/nsis/HushReader_0.1.0_x64-setup.exe`（约 2.4MB）；MSI `src-tauri/target/release/bundle/msi/HushReader_0.1.0_x64_en-US.msi`（约 3.5MB）。
+  - 构建输出有两条 Warn：`__TAURI_BUNDLE_TYPE variable not found in binary`（仅影响将来应用内更新插件定位，第一版阶段 6 才涉及，现无影响）。
 
 ## 尚未开始
 
