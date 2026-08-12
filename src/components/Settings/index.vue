@@ -96,11 +96,17 @@ const isChangingBookshelf = ref(false)
 // ---------- GitHub 应用内更新 ----------
 // 更新弹窗统一在 App 根节点渲染（单例状态，见 useUpdater）；这里只提供入口与展示信息。
 
-const { isChecking, currentVersion, checkForUpdate } = useUpdater()
+const { isChecking, currentVersion, checkForUpdate, openModal } = useUpdater()
 
 /** 手动"检查更新"（忽略已忽略版本过滤，总是立即检查）。 */
 function checkForUpdateManually() {
   void checkForUpdate({ force: true })
+}
+
+/** 重新打开"发现新版本"弹窗（用户之前关闭过更新弹窗）。 */
+function openPendingUpdate() {
+  const v = cfg.value.other.pendingUpdateVersion
+  if (v) openModal('idle', v, cfg.value.other.pendingUpdateBody || '')
 }
 
 /** 格式化最近检查时间。 */
@@ -878,6 +884,19 @@ function commitCapture(targetArr: string[]) {
           <div class="setting-row">
             <label>当前版本</label>
             <span class="badge" style="font-size: 12px">{{ currentVersion || '—' }}</span>
+          </div>
+
+          <!-- 有发现的新版本但用户尚未安装/忽略：持续提示，点击可重新查看 -->
+          <div v-if="cfg.other.pendingUpdateVersion" class="setting-row pending-update-row">
+            <label style="color: var(--c-accent)">发现新版本</label>
+            <div class="input-group" style="justify-content: flex-end; gap: 8px">
+              <span class="badge" style="font-size: 12px; color: var(--c-accent); min-width: 0">
+                v{{ cfg.other.pendingUpdateVersion }}
+              </span>
+              <button class="btn-primary" @click="openPendingUpdate" style="padding: 5px 14px; font-size: 12px">
+                查看更新
+              </button>
+            </div>
           </div>
 
           <div class="setting-row">

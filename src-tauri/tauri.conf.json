@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "HushReader",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "com.hushreader.desktop",
   "build": {
     "frontendDist": "../dist",

@@ -66,6 +66,11 @@ export function useUpdater() {
         pendingUpdate = update
         const ignored = configStore.config.other.ignoredUpdateVersion
         if (opts?.force || update.version !== ignored) {
+          // 记录待处理更新：即使关闭弹窗，设置页仍会提示"发现新版本"
+          configStore.config.other.pendingUpdateVersion = update.version
+          configStore.config.other.pendingUpdateBody = update.body ?? ''
+          configStore.save()
+          // 手动检查与启动自动检查发现新版本时都直接弹窗告知
           openModal('idle', update.version, update.body ?? '')
         }
       } else if (!opts?.silent) {
@@ -91,17 +96,19 @@ export function useUpdater() {
     await checkForUpdate({ silent: true, force: false })
   }
 
-  /** 下载并安装（进度通过事件回调更新）。 */
+  /** 下载更新（仅下载，不安装）；进度通过事件回调更新。 */
   async function startDownload() {
     const update = pendingUpdate
     if (!update) return
     updatePhase.value = 'downloading'
     try {
-      await platform.downloadAndInstallUpdate(update, (event) => {
+      await platform.downloadUpdate(update, (event) => {
         if (event.event === 'Started') {
           updateTotalBytes.value = event.contentLength ?? 0
         } else if (event.event === 'Progress') {
           updateDownloadedBytes.value += event.chunkLength ?? 0
+          // GitHub 下载经重定向可能拿不到总大小（contentLength 缺失），
+          // 此时进度条显示下载中动画与已下载字节，不做百分比
           if (updateTotalBytes.value > 0) {
             updateProgress.value = Math.round((updateDownloadedBytes.value / updateTotalBytes.value) * 100)
           }
@@ -116,21 +123,31 @@ export function useUpdater() {
     }
   }
 
-  /** 重启应用完成安装。 */
+  /** 安装并重启应用（用户点击"重启并安装"后执行）。 */
   async function restartToInstall() {
+    const update = pendingUpdate
+    if (!update) return
     updatePhase.value = 'installing'
     try {
+      // 先安装（运行安装器），再重启；完成后本机即为新版本
+      await platform.installUpdate(update)
+      // 安装成功，清除待处理标记
+      configStore.config.other.pendingUpdateVersion = ''
+      configStore.config.other.pendingUpdateBody = ''
+      configStore.save()
       await platform.relaunchApp()
     } catch (e: any) {
-      updateError.value = `重启失败：${e}`
+      updateError.value = `安装失败：${e}`
       updatePhase.value = 'error'
     }
   }
 
-  /** 忽略当前版本：记入配置，之后不再自动提示。 */
+  /** 忽略当前版本：记入配置并清除待处理标记，之后不再自动提示。 */
   function ignoreThisVersion() {
     if (updateVersion.value) {
       configStore.config.other.ignoredUpdateVersion = updateVersion.value
+      configStore.config.other.pendingUpdateVersion = ''
+      configStore.config.other.pendingUpdateBody = ''
       configStore.save()
     }
     updateVisible.value = false

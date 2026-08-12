@@ -1,11 +1,11 @@
 {
-  "version": "0.1.1",
-  "notes": "### Fixed\n- 应用图标替换为隐阅盒正式 logo（安装包、托盘、窗口图标）。",
-  "pub_date": "2026-08-12T06:36:41.633Z",
+  "version": "0.1.2",
+  "notes": "### Fixed\n- 更新下载进度显示：GitHub 下载拿不到总大小时不再停在 0%，改为显示已下载大小与流动进度动画。\n- 更新安装节奏：下载完成后先由用户确认再运行安装器并重启，不再自动弹出安装程序。\n\n### Changed\n- 关闭更新窗口后设置页仍提示\"发现新版本 vX.X.X\"，可随时重新查看；点击\"忽略此版本\"后提示消失。",
+  "pub_date": "2026-08-12T06:51:12.084Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSZzl0TTlQU2RSTUVDY1FZK3BIY20wVkNoTm5LaEowbGR6RmczbEVsbFdDWU1sOU0zRjJkQzVNSDk4dTJXeDNRU2Y1VUN6WURzSFhBemRQaDhUWS9weUpZK20vN1ZNZFFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTE2NTkxCWZpbGU6SHVzaFJlYWRlcl8wLjEuMV94NjQtc2V0dXAuZXhlCjE3N2x3bnVET1FrNkZlSi9IUVJJM3V4QVBNMlhxT0hoOHNBR0FsUmZCd1ZWUk1Pa1AxVEh2RkdxTHVFejk3ZTh6dkpIT1VXQzNDQytJNUwvQWVVOURBPT0K",
-      "url": "https://github.com/2740653660/hushreader/releases/latest/download/HushReader_0.1.1_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSZzl0TTlQU2RSTUwvNUhMRlB5SEk2YzFtMnlnUUR4OGhiT0NNdVVYYThhMS9qQ0syU0hLZUtlWmxtRnd6UDFHT280SklvWGZsOVdVSDNiR29DUEFmVVAzUXBOaHBKWnc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTE3NDY1CWZpbGU6SHVzaFJlYWRlcl8wLjEuMl94NjQtc2V0dXAuZXhlCi9jdGdPMW5EREpOT3Y0dnNBUjdMM2tBM2tqUSs3REZVS1JlNEhweGhYbWlYSE5Uc3BYSVRWVGVCaDNJZlNPa29FdnNJRTdMd0pRUndWcTJNb3M4WkJ3PT0K",
+      "url": "https://github.com/2740653660/hushreader/releases/latest/download/HushReader_0.1.2_x64-setup.exe"
     }
   }
 }

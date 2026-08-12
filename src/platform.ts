@@ -132,12 +132,16 @@ export const platform = {
     import('@tauri-apps/plugin-updater').then(({ check }) =>
       check({ timeout: timeoutMs ?? 20000 })),
 
-  /** 下载并安装更新；onEvent 回调接收 Started/Progress/Finished 事件。 */
-  downloadAndInstallUpdate: (
+  /** 仅下载更新（不安装）；onEvent 回调接收 Started/Progress/Finished 事件。 */
+  downloadUpdate: (
     update: Update,
     onEvent: (event: { event: string; contentLength?: number; chunkLength?: number }) => void
   ): Promise<void> =>
-    update.downloadAndInstall((event) => onEvent(event)),
+    update.download((event) => onEvent(event)),
+
+  /** 安装已下载的更新（运行安装器）。 */
+  installUpdate: (update: Update): Promise<void> =>
+    update.install(),
 
   /** 重启应用（更新安装完成后调用）。 */
   relaunchApp: (): Promise<void> =>

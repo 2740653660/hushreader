@@ -44,6 +44,9 @@ const downloadingPercent = computed(() => {
   return props.progress
 })
 
+/** 是否能确定下载总大小（GitHub 重定向下载可能拿不到，此时不显示百分比）。 */
+const hasTotalBytes = computed(() => props.totalBytes > 0)
+
 function formatBytes(bytes: number): string {
   if (!bytes || bytes <= 0) return ''
   const mb = bytes / (1024 * 1024)
@@ -106,15 +109,20 @@ onBeforeUnmount(() => {
 
           <!-- 下载中 -->
           <div v-if="phase === 'downloading'" class="update-download">
-            <div class="progress-track">
-              <div class="progress-fill" :style="{ width: downloadingPercent + '%' }"></div>
+            <div class="progress-track" :class="{ indeterminate: !hasTotalBytes }">
+              <div v-if="hasTotalBytes" class="progress-fill" :style="{ width: downloadingPercent + '%' }"></div>
+              <div v-else class="progress-slide"></div>
             </div>
             <p class="update-hint">
               正在下载更新…
-              <template v-if="totalBytes > 0">
+              <template v-if="hasTotalBytes">
                 {{ formatBytes(downloadedBytes) }} / {{ formatBytes(totalBytes) }}
+                （{{ downloadingPercent }}%）
               </template>
-              （{{ downloadingPercent }}%）
+              <template v-else>
+                <span v-if="downloadedBytes > 0">已下载 {{ formatBytes(downloadedBytes) }}</span>
+                <span v-else>准备中…</span>
+              </template>
             </p>
           </div>
 
@@ -141,7 +149,7 @@ onBeforeUnmount(() => {
             <button class="btn-ghost" @click="emit('ignore')">忽略此版本</button>
             <div style="flex: 1"></div>
             <button class="btn-secondary" @click="emit('later')">稍后再说</button>
-            <button class="btn-primary" @click="emit('install')">下载并安装</button>
+            <button class="btn-primary" @click="emit('install')">下载更新</button>
           </div>
         </template>
 
@@ -302,6 +310,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-full);
   overflow: hidden;
   margin-bottom: 8px;
+  position: relative;
 }
 
 .progress-fill {
@@ -309,6 +318,22 @@ onBeforeUnmount(() => {
   background: var(--c-accent);
   border-radius: var(--radius-full);
   transition: width 0.15s linear;
+}
+
+/* 拿不到总大小时：不确定进度动画（滑块来回流动） */
+.progress-track.indeterminate .progress-slide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--c-accent), transparent);
+  border-radius: var(--radius-full);
+  animation: slide-indeterminate 1.4s ease-in-out infinite;
+}
+
+@keyframes slide-indeterminate {
+  0% { left: -40%; }
+  100% { left: 100%; }
 }
 
 .update-ready {

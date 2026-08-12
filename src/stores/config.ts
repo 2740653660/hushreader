@@ -70,6 +70,10 @@ export interface OtherConfig {
   lastUpdateCheckAt: number
   /** 用户选择"忽略"的版本号；该版本不再自动提示，出现新版本仍会提示。 */
   ignoredUpdateVersion: string
+  /** 有待处理的更新版本号（发现新版本但用户尚未安装/忽略）；'' 表示无。 */
+  pendingUpdateVersion: string
+  /** 对应待处理更新的说明（设置页"查看更新"重新打开弹窗用）。 */
+  pendingUpdateBody: string
 }
 
 export interface ReaderConfig {
@@ -131,7 +135,9 @@ const DEFAULT_CONFIG: ReaderConfig = {
     showImages: false,
     bookshelfDir: '',
     lastUpdateCheckAt: 0,
-    ignoredUpdateVersion: ''
+    ignoredUpdateVersion: '',
+    pendingUpdateVersion: '',
+    pendingUpdateBody: ''
   },
   appearance: {
     fontSize: 16,
