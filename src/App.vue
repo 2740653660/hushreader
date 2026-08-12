@@ -3,10 +3,12 @@ import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } f
 import Bookshelf from './components/Bookshelf/index.vue'
 import FindBook from './components/FindBook/index.vue'
 import Toast from './components/Bookshelf/Toast.vue'
+import UpdateModal from './components/Update/UpdateModal.vue'
 import { useReaderStore } from './stores/reader'
 import { useBookStore, type Bookmark } from './stores/books'
 import { useConfigStore } from './stores/config'
 import { useDownloadStore } from './stores/download'
+import { useUpdater } from './composables/useUpdater'
 import { parseTxt } from './utils/txtParser'
 import { parseEpub } from './utils/epubParser'
 import { parseMobi } from './utils/mobiParser'
@@ -30,6 +32,7 @@ const readerStore = useReaderStore()
 const bookStore = useBookStore()
 const configStore = useConfigStore()
 const downloadStore = useDownloadStore()
+const updater = useUpdater()
 
 /** 页面导航（书架 ⇄ 找书），供子组件注入使用。 */
 function navigate(page: 'bookshelf' | 'findbook') {
@@ -722,6 +725,11 @@ onMounted(async () => {
   offReaderCommand = await platform.onReaderCommand((c: unknown) => handleHushreaderCommand(c as HushreaderCommand)).catch(() => undefined)
   offMainCommand = await platform.onMainCommand(handleMainCommand).catch(() => undefined)
 
+  // 当前版本号（更新弹窗展示"当前 → 新版本"用）
+  void updater.loadCurrentVersion()
+  // GitHub 应用内更新：启动时自动检查（每天最多一次，静默失败，D-048）
+  void updater.autoCheck()
+
   if (!route.value) route.value = 'bookshelf'
 })
 
@@ -739,4 +747,12 @@ onBeforeUnmount(() => {
   <Bookshelf v-if="route === 'bookshelf'" :enter-action="enterAction" />
   <FindBook v-else-if="route === 'findbook'" />
   <Toast :message="toastMsg" :type="toastType" />
+  <!-- GitHub 应用内更新弹窗（单例，App 根节点渲染） -->
+  <UpdateModal v-if="updater.updateVisible.value" :phase="updater.updatePhase.value"
+    :version="updater.updateVersion.value" :current-version="updater.currentVersion.value"
+    :body="updater.updateBody.value" :progress="updater.updateProgress.value"
+    :downloaded-bytes="updater.updateDownloadedBytes.value" :total-bytes="updater.updateTotalBytes.value"
+    :error-message="updater.updateError.value" @install="updater.startDownload()" @retry="updater.startDownload()"
+    @later="updater.closeModal()" @ignore="updater.ignoreThisVersion()"
+    @confirm-restart="updater.restartToInstall()" @close="updater.closeModal()" />
 </template>

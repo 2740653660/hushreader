@@ -66,6 +66,10 @@ export interface OtherConfig {
   showImages: boolean
   /** 书库目录（下载后台落盘 + 书架书籍所在目录）。为空时由 Rust 侧返回默认目录。 */
   bookshelfDir: string
+  /** 上次检查更新的时间戳（毫秒），用于"每天最多自动检查一次"。 */
+  lastUpdateCheckAt: number
+  /** 用户选择"忽略"的版本号；该版本不再自动提示，出现新版本仍会提示。 */
+  ignoredUpdateVersion: string
 }
 
 export interface ReaderConfig {
@@ -125,7 +129,9 @@ const DEFAULT_CONFIG: ReaderConfig = {
     timerEnabled: false,
     timerMinutes: 30,
     showImages: false,
-    bookshelfDir: ''
+    bookshelfDir: '',
+    lastUpdateCheckAt: 0,
+    ignoredUpdateVersion: ''
   },
   appearance: {
     fontSize: 16,

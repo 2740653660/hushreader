@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useConfigStore, type ReaderConfig } from '../../stores/config'
 import { useBookStore, type Book } from '../../stores/books'
 import { platform } from '../../platform'
+import { useUpdater } from '../../composables/useUpdater'
 import Toast from '../Bookshelf/Toast.vue'
 
 const emit = defineEmits<{ close: [] }>()
@@ -91,6 +92,23 @@ const newConfigName = ref('')
 const renamingConfigIndex = ref(-1)
 const renameInput = ref('')
 const isChangingBookshelf = ref(false)
+
+// ---------- GitHub 应用内更新 ----------
+// 更新弹窗统一在 App 根节点渲染（单例状态，见 useUpdater）；这里只提供入口与展示信息。
+
+const { isChecking, currentVersion, checkForUpdate } = useUpdater()
+
+/** 手动"检查更新"（忽略已忽略版本过滤，总是立即检查）。 */
+function checkForUpdateManually() {
+  void checkForUpdate({ force: true })
+}
+
+/** 格式化最近检查时间。 */
+const lastCheckLabel = computed(() => {
+  const t = cfg.value.other.lastUpdateCheckAt
+  if (!t) return '从未检查'
+  return `上次检查：${new Date(t).toLocaleString()}`
+})
 
 /** 选择并修改书库目录（下载后台的下载路径随之切换）。 */
 async function changeBookshelfDir() {
@@ -853,6 +871,25 @@ function commitCapture(targetArr: string[]) {
             </button>
           </div>
           <p class="hint" style="margin: -2px 0 6px; padding-left: 0">从备份文件导入书籍到书架，自动跳过路径重复的书籍</p>
+
+          <div class="divider"></div>
+          <div class="section-label">软件更新</div>
+
+          <div class="setting-row">
+            <label>当前版本</label>
+            <span class="badge" style="font-size: 12px">{{ currentVersion || '—' }}</span>
+          </div>
+
+          <div class="setting-row">
+            <label>检查更新</label>
+            <button class="btn-secondary" :disabled="isChecking" @click="checkForUpdateManually"
+              style="padding: 5px 14px; font-size: 12px">
+              {{ isChecking ? '检查中...' : '检查更新' }}
+            </button>
+          </div>
+          <p class="hint" style="margin: -2px 0 6px; padding-left: 0">
+            {{ lastCheckLabel }}；应用每天最多自动检查一次，这里可随时手动检查
+          </p>
 
         </div>
       </div>

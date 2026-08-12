@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-步骤 4（完整隐蔽阅读）功能核对与验收通过：全部功能实际已随步骤 2 交付，2026-08-12 转正自动翻页（D-042）、确认书签快捷键默认值维持 Shift+F（D-043/D-045）、同步删除已移除的全局快捷键描述（D-044），产品负责人 Windows 验收通过（D-046）。
+步骤 6（GitHub 更新与发布）开发中（D-047/D-048）：产品负责人决定跳过步骤 5（推迟到第二版），步骤 6 提前。代码开发已完成（依赖、配置、前端更新弹窗、自动/手动检查、签名与发布脚本），待生成签名密钥并完成 Windows 构建后做端到端实测。
 
 ## 已完成
 
@@ -74,15 +74,22 @@
 - 旧版 HushReader（ZTools 插件）书架数据一次性迁移导入（见"当前授权状态"）。
 - 测量安装包、启动速度和内存占用（阶段 1 剩余）。
 - 干净环境安装/卸载测试（步骤 2 已产出安装包但未测）。
-- GitHub 应用内更新（阶段 6）。
-- 书源规则更新、书源失效手动切换（阶段 5）。
+- 步骤 6 剩余：签名密钥生成、Windows 构建（验证 `.sig` 产物与 `__TAURI_BUNDLE_TYPE` 警告）、发布 0.1.0/0.1.1 端到端实测更新。
+- 步骤 5（小说和书源更新）——已推迟到第二版（D-047）。
 
 ## 当前授权状态
 
-步骤 1、2、3、4 均已完成开发并验收通过。下一步为步骤 5（小说和书源更新），待产品负责人确认后开始。注意：旧数据迁移功能（一次性导入旧版书架）尚未实现——方案要求步骤 2 包含它，但实现它需要先确认旧版数据实际存储位置与格式，需要产品负责人提供一台装有旧版 ZTools 插件的环境才能验证；若验收时不需要，将迁移推迟到后续版本并在文档中记录。
+步骤 6（GitHub 应用内更新与发布）开发中：代码开发已完成（2026-08-12，D-048），下一步为生成签名密钥并在 Windows 构建、发布实测。步骤 1、2、3、4 均已完成开发并验收通过。步骤 5 按产品负责人决定推迟到第二版。注意：旧数据迁移功能（一次性导入旧版书架）尚未实现——方案要求步骤 2 包含它，但实现它需要先确认旧版数据实际存储位置与格式，需要产品负责人提供一台装有旧版 ZTools 插件的环境才能验证；若验收时不需要，将迁移推迟到后续版本并在文档中记录。
 
 ## 当前工作
 
-- 步骤 4 已验收通过（D-046，2026-08-12）：自动翻页（设置开关/右键菜单/翻页间隔/连续翻页）、重启后进度恢复等功能正常；步骤 4 收尾完成，等待产品负责人决定何时开始步骤 5（小说和书源更新）。
+- 步骤 6 开发完成（2026-08-12，D-047/D-048）：
+  - 跳过步骤 5（小说和书源更新）到第二版；步骤 6（GitHub 应用内更新）提前。
+  - 依赖：`tauri-plugin-updater`/`tauri-plugin-process`（Rust），`@tauri-apps/plugin-updater`/`plugin-process`（前端）；capabilities 加 `updater:default`/`process:default`。
+  - `tauri.conf.json`：`createUpdaterArtifacts: true`；`plugins.updater.pubkey`（待填公钥）+ endpoints 指向 `github.com/2740653660/hushreader/releases/latest/download/latest.json`。
+  - 前端：`src/composables/useUpdater.ts`（单例状态机：自动检查每天一次/手动检查/下载进度/重启安装/忽略版本）；`src/components/Update/UpdateModal.vue` 弹窗（新版本+说明、下载进度、重试、忽略/稍后/安装）；设置页"其他设置"新增"软件更新"区块（当前版本+检查更新+上次检查时间）；`App.vue` 启动自动检查并渲染唯一弹窗；`config.ts` 的 `other` 新增 `lastUpdateCheckAt`/`ignoredUpdateVersion`。
+  - 发布脚本 `scripts/prepare-release.ps1`：读取版本号+`.sig`，生成 `latest.json`；AGENTS.md 新增「发布与密钥管理」章节（固定发布流程、密钥保管/换电脑/严禁入库、发布由代理操作）。
+  - 验证：`vue-tsc`、`vite build`、`cargo check` 全部通过；`cargo build --release` 与 `tauri build` 待产品负责人在 Windows 执行。
 - 本机开发环境说明：Rust 依赖下载需走代理（127.0.0.1:7897）才稳定；Windows 编译按协作规则由产品负责人在本机执行（已产出产物）。
 - 构建提示：`tauri build` 前若 JRE 大文件被 Defender 锁定（`拒绝访问`），先删除 `src-tauri/resources/sonovel/runtime/bin/server/classes*.jsa` 再构建。
+- 步骤 6 构建前先由产品负责人执行 `npx tauri signer generate -- -w <私钥路径>` 生成签名密钥，公钥填入 `tauri.conf.json`（详见 AGENTS.md「发布与密钥管理」）。

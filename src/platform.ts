@@ -4,6 +4,7 @@
  */
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import type { Update } from '@tauri-apps/plugin-updater'
 
 export interface DialogFilter {
   name: string
@@ -123,6 +124,24 @@ export const platform = {
   /** 订阅下载任务结束（成功/失败）。 */
   onFetchDone: (cb: (p: { ok: boolean; message: string }) => void): Promise<UnlistenFn> =>
     listen('sonovel-fetch-done', e => cb(e.payload as { ok: boolean; message: string })),
+
+  // ---------- GitHub 应用内更新 ----------
+
+  /** 检查 GitHub Releases 是否有新版本；无更新返回 null。 */
+  checkForUpdate: (timeoutMs?: number): Promise<Update | null> =>
+    import('@tauri-apps/plugin-updater').then(({ check }) =>
+      check({ timeout: timeoutMs ?? 20000 })),
+
+  /** 下载并安装更新；onEvent 回调接收 Started/Progress/Finished 事件。 */
+  downloadAndInstallUpdate: (
+    update: Update,
+    onEvent: (event: { event: string; contentLength?: number; chunkLength?: number }) => void
+  ): Promise<void> =>
+    update.downloadAndInstall((event) => onEvent(event)),
+
+  /** 重启应用（更新安装完成后调用）。 */
+  relaunchApp: (): Promise<void> =>
+    import('@tauri-apps/plugin-process').then(({ relaunch }) => relaunch()),
 
   // ---------- 事件 ----------
 

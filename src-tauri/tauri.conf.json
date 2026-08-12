@@ -32,6 +32,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -41,6 +42,14 @@
     ],
     "resources": {
       "resources/sonovel": "sonovel"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMwNTEyNzNEM0REM0Y2NjAKUldSZzl0TTlQU2RSTUE3K0VaTFdORzhRYnJjU3o5Z2lraFVDSGp3U1FsVlp3K3pQR1hvckJSS3UK",
+      "endpoints": [
+        "https://github.com/2740653660/hushreader/releases/latest/download/latest.json"
+      ]
     }
   }
 }

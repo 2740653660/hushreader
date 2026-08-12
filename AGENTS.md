@@ -78,6 +78,39 @@
 - 代理应主动判断“哪些编译需要走 Windows”，并及时告知产品负责人，附上可直接复制的命令和预计耗时，由产品负责人执行。
 - 确需本机编译且无 Windows 环境可用时，先向产品负责人说明原因并获得同意，再动手。
 
+## 发布与密钥管理
+
+发布与密钥规则长期固定，每次发布新版本都遵循本节（与 `scripts/prepare-release.ps1` 配套）。
+
+### 发布由代理操作
+
+- GitHub 发布操作由 AI 代理执行（创建 Release、上传产物、验证），产品负责人不执行发布命令。
+- 前提：`gh` 已登录产品负责人的 GitHub 账号（`gh auth status` 确认）。仓库为 `2740653660/hushreader`。
+- 推送与 GitHub 操作走既有代理（127.0.0.1:7897，git 仓库已配置局部代理）。
+
+### 固定发布流程（每次新版走同一套）
+
+1. 更新版本号：`src-tauri/tauri.conf.json` 的 `version`（安装包文件名随版本号变化）；更新 `CHANGELOG.md` 的更新说明。
+2. Windows 本机构建（由产品负责人在 Windows 执行，代理给出命令）：
+   - 设置签名环境变量：`TAURI_SIGNING_PRIVATE_KEY`（私钥文件路径或内容）、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`。
+   - 运行 `npx tauri build`（走代理环境变量；JRE 大文件被 Defender 锁定时按既有方法处理）。
+   - 产物应包含 `bundle/nsis/HushReader_x.y.z_x64-setup.exe` 及其 `.sig` 签名文件。
+3. 生成更新清单：运行 `.\scripts\prepare-release.ps1`，产出 `latest.json`（含版本号、说明、签名、下载地址）。
+4. 推送代码；用 `gh` 创建 GitHub Release（tag = `v版本号`，正文填更新说明），上传 3 个文件：
+   - `HushReader_x.y.z_x64-setup.exe`
+   - 对应的 `.sig`
+   - `latest.json`
+5. 发布后验证：`https://github.com/2740653660/hushreader/releases/latest` 能显示新版本；`latest.json` 的版本号与签名可被应用内更新正常校验（关键流程必须端到端实测一次）。
+6. 同步更新 `docs/`（PROGRESS 等）。
+
+### 签名密钥规则（Tauri 更新强制 ed25519 签名，不可关闭）
+
+- 私钥 = 私钥文件 + 密码，仅保存在产品负责人本机（默认 `C:\Users\yy\.hushreader-update-key\`）与其信任的私人备份处（网盘/密码管理器）。
+- **私钥和密码绝不进入项目仓库、不进 Git、不上传 GitHub**；公钥写入 `src-tauri/tauri.conf.json` 的 `plugins.updater.pubkey` 随代码走。
+- **私钥丢失 = 老用户永远无法升级**，这是唯一必须防的风险；向产品负责人强调备份。
+- 换电脑：把私钥文件复制到新电脑并记住密码即可继续发布，公钥已在仓库无需重配。
+- 生成命令（Windows，用 `npx` 时不需要 `--`）：`npx tauri signer generate -w <私钥路径>`；公钥输出在终端，需人工填入 `tauri.conf.json`。
+
 ## 完成标准
 
 一项已批准的工作只有同时满足以下条件才算完成：
