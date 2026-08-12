@@ -218,7 +218,7 @@ fn ensure_reader_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         READER_LABEL,
         WebviewUrl::App("src/reader/index.html".into()),
     )
-    .title("隐阅盒阅读")
+    .title("隐阅阁阅读")
     .inner_size(READER_MIN_WIDTH, READER_MIN_HEIGHT)
     .decorations(false)
     .transparent(true)

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-08-12
+
+### Changed
+- 应用正式名称改为「隐阅阁」（主窗口标题、悬浮窗标题、页面标题）。
+- 图标全部应用正式 logo：程序 exe、任务栏、窗口、托盘、安装包图标。
+
 ## [0.1.2] - 2026-08-12
 
 ### Fixed
