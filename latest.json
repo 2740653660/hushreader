@@ -1,11 +1,11 @@
 {
   "version": "0.1.4",
   "notes": "### Fixed\n- 修复应用内更新前下载后台未退出导致安装器覆盖 `extnet.dll` 失败的问题。\n- 修复正式名称改名后升级可能新建安装目录、保留旧快捷方式和卸载项的问题，升级继续使用原安装目录。\n\n### Changed\n- 桌面快捷方式、开始菜单、安装包和卸载项统一显示「隐阅阁」。",
-  "pub_date": "2026-08-12T08:49:27.397Z",
+  "pub_date": "2026-08-12T09:21:29.427Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSZzl0TTlQU2RSTU9sdE1lazlrMmFOMHhYNHAwNHNteVgvUGZOZi9JcXpKSXR5ZG1GQVA4SWZWUXZLUzhsSkNMRW81OGhOTE1sUnZwWmQrYWwzYUMwamZJTk9VYWRmRXdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTI0NTU2CWZpbGU66ZqQ6ZiF6ZiBXzAuMS40X3g2NC1zZXR1cC5leGUKbVF6ZkNoWnUrUExsb2c5RnRIMVBYTC9obGRERHVYb2oyMGVtQlljdFdVUVNYdVR1TkF5RnRtTzFnLzllaStoajJRVTlEVDlyNEsrMDZnaW5xdlppQWc9PQo=",
-      "url": "https://github.com/2740653660/hushreader/releases/latest/download/隐阅阁_0.1.4_x64-setup.exe"
+      "url": "https://github.com/2740653660/hushreader/releases/latest/download/_0.1.4_x64-setup.exe"
     }
   }
 }

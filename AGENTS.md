@@ -96,6 +96,7 @@
    - 设置签名环境变量：`TAURI_SIGNING_PRIVATE_KEY`（私钥文件路径或内容）、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`。
    - 运行 `npx tauri build --bundles nsis`（走代理环境变量；JRE 大文件被 Defender 锁定时按既有方法处理；本项目更新发布只使用 NSIS，MSI 仍保留为首次安装渠道）。
    - 产物应包含 `bundle/nsis/隐阅阁_x.y.z_x64-setup.exe` 及其 `.sig` 签名文件。
+   - GitHub Release 资产名可能会将中文前缀规范化为下划线；上传后必须以 GitHub 返回的实际资产名核对 `latest.json` 下载地址。
 3. 生成更新清单：运行 `.\scripts\prepare-release.ps1`，产出 `latest.json`（含版本号、说明、签名、下载地址）。
 4. 推送代码；用 `gh` 创建 GitHub Release（tag = `v版本号`，正文填更新说明），上传 3 个文件：
    - `隐阅阁_x.y.z_x64-setup.exe`

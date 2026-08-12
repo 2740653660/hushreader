@@ -76,7 +76,9 @@ if (!notes) {
 }
 
 const signature = fs.readFileSync(sigPath, 'utf8').trim()
-const downloadUrl = `https://github.com/2740653660/hushreader/releases/latest/download/${installerName}`
+// GitHub Release 资产名会把非 ASCII 前缀规范化为下划线，清单必须指向线上实际名称。
+const githubAssetName = installerName.replace(/^[^A-Za-z0-9]+/, '_')
+const downloadUrl = `https://github.com/2740653660/hushreader/releases/latest/download/${encodeURIComponent(githubAssetName)}`
 
 const latest = {
   version,
@@ -94,6 +96,7 @@ fs.writeFileSync(path.join(root, 'latest.json'), JSON.stringify(latest, null, 2)
 
 console.log(`已生成 latest.json（版本 ${version}）`)
 console.log(`  安装包：${installerName}`)
+console.log(`  GitHub 资产名：${githubAssetName}`)
 console.log(`  下载地址：${downloadUrl}`)
 console.log('\n下一步：在 GitHub Releases（tag = v' + version + '）上传以下 3 个文件：')
 console.log(`  1. ${installerPath}`)

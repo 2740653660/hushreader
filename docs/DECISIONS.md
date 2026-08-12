@@ -93,3 +93,4 @@
 - **D-049 正式产品名称统一为“隐阅阁”**：取代 D-002 中的“隐阅盒 / HushReader”产品名称描述；HushReader 仅保留为旧版本名称和技术兼容标识，`identifier`、本地数据目录及备份字段不变。
 - **D-050 `productName` 改名与升级兼容**：从 0.1.4 起将 Tauri `productName` 改为“隐阅阁”，新增 NSIS 安装钩子读取旧 `Software\\hushreader\\HushReader` 安装注册项并原地升级，同时迁移新安装位置注册项、删除旧快捷方式和旧卸载注册项；`identifier`、资源、更新器配置和图标保持不变。
 - **D-051 更新和卸载前停止下载后台**：应用内更新启动安装器前调用 `backend_stop`，Rust 退出兜底按 pid 文件清理异常残留；NSIS 卸载钩子同样尽力结束 Java 后台，避免锁住 `extnet.dll`。
+- **D-052 GitHub 资产名兼容**：GitHub Release 会将中文安装包前缀规范化为下划线，导致上传后的真实资产名与本地文件名不同；发布脚本仍按 `productName` 查找本地产物，但 `latest.json` 使用 GitHub 返回的实际资产名，确保应用内更新下载地址可用。

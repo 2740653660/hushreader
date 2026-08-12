@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-步骤 6（GitHub 更新与发布）开发中（D-047/D-048/D-049/D-050/D-051）：产品负责人决定跳过步骤 5（推迟到第二版），步骤 6 提前。0.1.4 已完成代码修改、Windows 签名 NSIS 构建和已安装 0.1.3 环境的原地升级实测，待 GitHub Release 发布及产品负责人从 0.1.3 发起应用内更新实测。
+步骤 6（GitHub 更新与发布）开发中（D-047/D-048/D-049/D-050/D-051/D-052）：产品负责人决定跳过步骤 5（推迟到第二版），步骤 6 提前。0.1.4 已完成代码修改、Windows 签名 NSIS 构建、已安装 0.1.3 环境的原地升级实测和 GitHub Release 发布，待产品负责人从 0.1.3 发起应用内更新实测。
 
 ## 已完成
 
@@ -74,7 +74,7 @@
 - `productName` 更新为“隐阅阁”，版本更新为 0.1.4；`identifier`、资源、更新器配置和图标保持不变。
 - 新增 ASCII NSIS 升级/卸载钩子：从旧 `Software\\hushreader\\HushReader` 注册项恢复原安装目录，写入“隐阅阁”新注册项，删除旧快捷方式与旧卸载项；卸载前按 `%APPDATA%\\com.hushreader.desktop\\sonovel\\backend.pid` 尽力结束 Java 后台。
 - 应用内更新在启动安装器前调用已有 `backend_stop`；Rust 退出逻辑补充无内存状态时按 pid 文件清理残留后台，避免 `extnet.dll` 文件锁。
-- 发布脚本已改为按 `tauri.conf.json` 的 `productName` 查找安装包，并同步更新发布示例和 0.1.4 更新说明。
+- 发布脚本已改为按 `tauri.conf.json` 的 `productName` 查找安装包，并同步更新发布示例和 0.1.4 更新说明；GitHub 将中文资产名前缀规范化为下划线，清单使用线上实际资产名（D-052）。
 - 构建验证：`npm run build`、`cargo check`、`node --check scripts/prepare-release.mjs` 通过；`powershell -ExecutionPolicy Bypass -File .\\scripts\\build-release.ps1` 通过，生成 `隐阅阁_0.1.4_x64-setup.exe`（约 51.4MB）及 `.sig`（420 字节）。默认 MSI 的 WiX `light.exe` 在本机失败，因此发布脚本改为 `--bundles nsis`，符合更新链只发布 NSIS 的决定。
 - 升级兼容实测：从仓库保留的 0.1.3 安装包恢复后运行 0.1.4 `/P`，退出码 0；`%LOCALAPPDATA%\\HushReader\\app.exe` 版本为 0.1.4，未产生 `%LOCALAPPDATA%\\隐阅阁`；旧桌面/开始菜单 `HushReader.lnk` 删除，新「隐阅阁」快捷方式存在；卸载注册表仅有「隐阅阁」条目，安装位置仍为旧目录。
 
@@ -83,16 +83,16 @@
 - 旧版 HushReader（ZTools 插件）书架数据一次性迁移导入（见"当前授权状态"）。
 - 测量安装包、启动速度和内存占用（阶段 1 剩余）。
 - 干净环境安装/卸载测试（步骤 2 已产出安装包但未测）。
-- 步骤 6 剩余：GitHub Release 发布，以及由产品负责人从 0.1.3 发起的应用内更新端到端体验确认；干净 Windows 环境测试仍未完成。
+- 步骤 6 剩余：由产品负责人从 0.1.3 发起的应用内更新端到端体验确认；干净 Windows 环境测试仍未完成。
 - 步骤 5（小说和书源更新）——已推迟到第二版（D-047）。
 
 ## 当前授权状态
 
-步骤 6（GitHub 应用内更新与发布）开发中：代码开发、签名密钥准备、Windows NSIS 构建和升级实测已完成（2026-08-12，D-048/D-049/D-050/D-051），下一步为 GitHub Release 发布及应用内更新端到端实测。步骤 1、2、3、4 均已完成开发并验收通过。步骤 5 按产品负责人决定推迟到第二版。注意：旧数据迁移功能（一次性导入旧版书架）尚未实现——方案要求步骤 2 包含它，但实现它需要先确认旧版数据实际存储位置与格式，需要产品负责人提供一台装有旧版 ZTools 插件的环境才能验证；若验收时不需要，将迁移推迟到后续版本并在文档中记录。
+步骤 6（GitHub 应用内更新与发布）开发中：代码开发、签名密钥准备、Windows NSIS 构建、升级实测和 GitHub Release 发布已完成（2026-08-12，D-048/D-049/D-050/D-051/D-052），下一步为产品负责人从 0.1.3 发起应用内更新端到端实测。步骤 1、2、3、4 均已完成开发并验收通过。步骤 5 按产品负责人决定推迟到第二版。注意：旧数据迁移功能（一次性导入旧版书架）尚未实现——方案要求步骤 2 包含它，但实现它需要先确认旧版数据实际存储位置与格式，需要产品负责人提供一台装有旧版 ZTools 插件的环境才能验证；若验收时不需要，将迁移推迟到后续版本并在文档中记录。
 
 ## 当前工作
 
-- 步骤 6 开发完成（2026-08-12，D-047/D-048/D-049/D-050/D-051，发布验证进行中）：
+- 步骤 6 开发完成（2026-08-12，D-047/D-048/D-049/D-050/D-051/D-052，发布已完成，应用内更新验证进行中）：
   - 跳过步骤 5（小说和书源更新）到第二版；步骤 6（GitHub 应用内更新）提前。
   - 依赖：`tauri-plugin-updater`/`tauri-plugin-process`（Rust），`@tauri-apps/plugin-updater`/`plugin-process`（前端）；capabilities 加 `updater:default`/`process:default`。
   - `tauri.conf.json`：`createUpdaterArtifacts: true`；`plugins.updater.pubkey` 已配置 + endpoints 指向 `github.com/2740653660/hushreader/releases/latest/download/latest.json`。
